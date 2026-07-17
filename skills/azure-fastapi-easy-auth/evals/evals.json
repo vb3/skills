@@ -1,0 +1,42 @@
+{
+  "skill_name": "azure-fastapi-easy-auth",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Our FastAPI app on Azure Functions Flex has Easy Auth enabled. A v2 delegated token has the correct tenant, API client GUID audience, and access_as_user scope, but both /.auth/me and /v1/openapi.json return 403 before any FastAPI logs appear. Diagnose this without exposing the token and propose the smallest authsettingsV2 Bicep correction.",
+      "expected_output": "A layered diagnosis that distinguishes token issuance, JWT validity, Easy Auth authentication, and Easy Auth authorization, identifies the azp client allowlist as the likely 403 cause, and gives a safe Bicep and negative-test matrix.",
+      "files": [],
+      "expectations": [
+        "Separates token issuance, JWT validity, Easy Auth authentication, and Easy Auth authorization.",
+        "Explains that defaultAuthorizationPolicy.allowedApplications evaluates azp for v2 or appid for v1 and is separate from preAuthorizedApplications.",
+        "Uses safe claim booleans rather than printing or persisting the bearer token.",
+        "Includes an explicit matrix with no-token 401, wrong-audience 401 as an empirical control, unauthorized-client 403, and authorized-token 200.",
+        "The Bicep correction adds only the approved caller client ID from azp to allowedApplications and does not broaden allowed audiences."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Design authentication for a FastAPI API hosted on Azure App Service. It has a browser UI with user context, a scheduled Azure-hosted worker, and an external CI integration. Explain delegated vs managed identity vs app-only, define the Entra registrations and consent boundaries, and show a secure authsettingsV2 Bicep shape.",
+      "expected_output": "A flow decision matrix, durable resource API and caller relationships, least-privilege consent guidance, and parameterized Easy Auth configuration with correct issuer, audiences, and client authorization.",
+      "files": [],
+      "expectations": [
+        "Uses delegated authorization for user-context browser requests, managed identity for the Azure-hosted worker, and app-only credentials or federation for external CI.",
+        "Explicitly rejects delegated Azure CLI user tokens for unattended production automation and selects managed identity for Azure-hosted work or federation/certificates for external CI.",
+        "Keeps custom API scopes and app roles distinct from Microsoft Graph permissions.",
+        "Uses a tenant/version-correct issuer and only audiences belonging to the resource API."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create an azd smoke-test plan for a FastAPI Azure Functions Flex deployment protected by Easy Auth and private data services. We keep hitting provider, region, OneDeploy, 401, and 403 failures. Give a read-only preflight, deployment sequence, safe diagnostics, cleanup boundaries, and a report format that proves each layer separately.",
+      "expected_output": "A sequenced, evidence-driven plan that separates infrastructure and deployment failures from authentication, authorization, FastAPI, and business-layer proof.",
+      "files": [],
+      "expectations": [
+        "Checks Flex region support and Microsoft.App registration for VNet integration before provisioning.",
+        "Distinguishes provision and OneDeploy failures from HTTP authentication failures.",
+        "Preserves durable app registrations and consent while cleaning only explicitly owned transient resources.",
+        "Reports token, platform authentication, FastAPI, and business or database proof separately with an explicit live, local static, documented, or empirical evidence label."
+      ]
+    }
+  ]
+}
