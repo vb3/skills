@@ -1,7 +1,7 @@
 ---
 name: azure-fastapi-easy-auth
-description: Secure and troubleshoot FastAPI on Azure Functions or Azure App Service with Microsoft Entra App Service Authentication (Easy Auth). Use this skill whenever a request involves configuring authsettingsV2 Bicep, debugging a 401 or 403 before FastAPI, validating Entra audiences or caller applications, designing delegated vs app-only vs managed identity access, handling tenant consent or Conditional Access, or automating azd and Azure CLI authentication smoke tests. Trigger even when the user only says that a valid bearer token is rejected by an Azure-hosted FastAPI API.
-compatibility: Requires Python 3.10+ for bundled diagnostics. Azure CLI, Azure Developer CLI, and Bicep are optional and needed only for Azure preflight, deployment, or template compilation.
+description: Scaffold, secure, deploy, and troubleshoot FastAPI on Azure Functions or Azure App Service with Microsoft Entra App Service Authentication (Easy Auth). Use this skill for a fresh FastAPI Functions setup, authsettingsV2 Bicep, azd deployment, 401 or 403 before FastAPI, Entra audiences or caller applications, delegated vs app-only vs managed identity access, consent, Conditional Access, or auth smoke tests. Default to the fresh setup fast path and load debugging guidance only after a setup gate fails.
+compatibility: Requires Python 3.10+. The complete fresh setup uses Azure CLI, Azure Developer CLI, Bicep, Azure Functions Core Tools, and uv with the MSAL Python package for the approved-caller device-code probe.
 ---
 
 # Azure FastAPI Easy Auth
@@ -14,7 +14,42 @@ Resolve `<skill-directory>` to the directory containing this `SKILL.md`. Use
 that resolved path for bundled scripts, tests, examples, and Bicep assets so the
 commands work from a user-wide symlink or any project directory.
 
-## Safety boundary
+## Fresh setup fast path
+
+Use this path by default for a new or minimal repository. Read
+[references/fresh-setup.md](references/fresh-setup.md) and execute its seven
+gates in order:
+
+1. Scaffold FastAPI, `AsgiFunctionApp`, `azure.yaml`, and Flex Bicep with
+   [scripts/scaffold_fastapi_flex.py](scripts/scaffold_fastapi_flex.py).
+2. Prove the DB-free `/auth/probe` locally through Functions Core Tools.
+3. Create once or verify the durable v2 resource API with
+   [scripts/bootstrap_resource_app.py](scripts/bootstrap_resource_app.py).
+4. Set the tenant, resource app, approved caller, and Flex region in azd.
+5. Run tests, compile Bicep, and run the read-only Azure preflight.
+6. Run `azd provision`, then `azd deploy`.
+7. Run the no-token, wrong-audience, and approved-token matrix to prove the
+   first FastAPI 200.
+
+This ordering prevents the known setup time sinks before they occur:
+
+- durable directory objects avoid create-token-delete propagation races;
+- the v2 GUID audience is configured before deployment;
+- `preAuthorizedApplications` and Easy Auth `allowedApplications` receive the
+  same approved caller but remain separate controls;
+- tenant consent is evaluated from current evidence rather than assumed;
+- provider, region, deployment, and host-startup failures are resolved before
+  HTTP auth diagnosis.
+
+If all seven gates pass, stop. Do not load debugging references during a clean setup.
+
+## Detailed workflow
+
+Use the remaining sections when the project is not greenfield, has multiple
+caller types, or needs architecture and governance decisions beyond the first
+authenticated response.
+
+### Safety boundary
 
 - Never print, log, save, paste, or place bearer tokens on a command line.
 - Use client IDs and tenant IDs only as nonsecret identifiers. Keep credentials
@@ -26,7 +61,7 @@ commands work from a user-wide symlink or any project directory.
 - Label live evidence, local static evidence, documented guarantees, and
   empirical observations separately.
 
-## Intake
+### Intake
 
 Collect these facts before changing an app registration or infrastructure:
 
@@ -47,7 +82,7 @@ Stop and ask if the resource API, intended caller, tenant, or authorization
 semantics are unknown. Guessing at an audience or widening a client allowlist
 can authorize a token intended for the wrong API or caller.
 
-## Choose the flow
+### Choose the flow
 
 Read [references/architecture-and-flows.md](references/architecture-and-flows.md)
 for the complete registration model.
@@ -63,7 +98,7 @@ Use managed identity for an Azure-hosted worker when the target accepts Entra
 tokens. Use app-only for a workload with no user. Use delegated access only
 when the operation genuinely needs user context.
 
-## Model the four auth layers
+### Model the four auth layers
 
 1. **Token issuance:** The client obtained a token from the intended tenant.
 2. **JWT validity:** Version, signature metadata, issuer, tenant, time,
@@ -75,7 +110,7 @@ when the operation genuinely needs user context.
 
 Never collapse these into "auth passed." Report evidence for each layer.
 
-## Define durable registrations
+### Define durable registrations
 
 Separate lifecycle responsibilities:
 
@@ -93,7 +128,7 @@ Separate lifecycle responsibilities:
 It does not configure Easy Auth caller authorization and does not override
 tenant consent or Conditional Access.
 
-## Write tests before configuration
+### Write tests before configuration
 
 Create static contract tests before editing Bicep or scripts:
 
@@ -113,7 +148,7 @@ python3 -m unittest discover \
   -s "<skill-directory>/tests" -v
 ```
 
-## Compose `authsettingsV2`
+### Compose `authsettingsV2`
 
 Read
 [references/easy-auth-configuration.md](references/easy-auth-configuration.md),
@@ -140,7 +175,7 @@ be included for a v1 or custom resource form only after proving it identifies
 the same resource API. Never add Microsoft Graph or Azure management audiences
 to make an API token pass.
 
-## Preflight and deploy
+### Preflight and deploy
 
 Read
 [references/deployment-and-networking.md](references/deployment-and-networking.md).
@@ -159,47 +194,7 @@ For Functions Flex with VNet integration, check regional availability and the
 `Microsoft.App` provider before provisioning. A provision, package, or
 OneDeploy failure is not an Easy Auth failure.
 
-## Validate safely
-
-Read [references/diagnostics.md](references/diagnostics.md), then use
-[scripts/easy_auth_probe.py](scripts/easy_auth_probe.py). The script keeps
-tokens in memory, emits only claim booleans, and probes both `/.auth/me` and a
-DB-free FastAPI endpoint.
-
-Required matrix:
-
-| Control | Expected | Meaning |
-| --- | ---: | --- |
-| No token | 401 | Authentication required |
-| Wrong audience | 401 (empirical control) | Token rejected for this API |
-| Valid token, unauthorized caller | 403 | Platform caller authorization denied |
-| Valid token, authorized caller | 200 | Platform forwarded request |
-| FastAPI probe marker | true | Request reached FastAPI |
-
-The exact wrong-audience status is an empirical check. The documented contract
-is that built-in authorization policy failures return 403, while the configured
-unauthenticated action handles missing or invalid credentials.
-
-## Diagnose from evidence
-
-1. **No token is not denied:** Fix `globalValidation`, site selection, or path
-   exclusions.
-2. **Wrong audience is accepted:** Remove foreign audiences immediately.
-3. **Expected token gets 401:** Check token version, issuer, tenant, audience,
-   time, signature metadata, and deployed settings.
-4. **Expected token gets 403:** Compare `azp` for v2 or `appid` for v1 with
-   `allowedApplications`; then check allowed principals.
-5. **`/.auth/me` and FastAPI return the same denial:** Treat it as platform
-   denial before FastAPI.
-6. **`/.auth/me` succeeds but FastAPI fails:** Inspect route, proxy, app code,
-   scopes, roles, and business authorization.
-7. **No endpoint exists or deployment failed:** Stop auth diagnosis and fix
-   infrastructure or package deployment first.
-
-Do not diagnose a generic 403 from status alone. Capture the safe claim summary,
-deployed settings, both platform and app probes, and deployment evidence.
-
-## Handle consent and Conditional Access
+### Handle consent and Conditional Access
 
 Read [references/governance.md](references/governance.md).
 
@@ -212,60 +207,56 @@ Read [references/governance.md](references/governance.md).
   automation. Use managed identity or app-only where the workload has no user.
 - Do not weaken tenant policy to make a smoke test pass.
 
-## Cleanup and stop conditions
+### Identity and diagnostic cleanup boundaries
 
-- Use explicit ownership tags or manifests for transient Azure cleanup.
-- Give retained diagnostic resources an owner and expiry time.
-- Preserve durable resource apps, client apps, service principals, consent, and
-  app-role assignments unless deletion was explicitly approved.
-- Securely remove any temporary Azure CLI profile after an authorized fresh
-  token experiment.
-- Stop before mutation when ownership, tenant authority, or consent authority is
-  unclear.
+- Delete only transient Azure resources with explicit ownership markers.
+- Preserve resource apps, client apps, service principals, consent, and
+  app-role assignments unless their owner explicitly approves deletion.
+- Give retained diagnostics an owner and expiry, and remove any temporary Azure
+  CLI profile after an authorized fresh-token experiment.
+- Do not mutate directory objects when ownership or tenant authority is unclear.
 
-## Anti-patterns
+## Debug path
 
-| Anti-pattern | Exact remediation |
-| --- | --- |
-| "Azure CLI returned a token, so the API is healthy" | Run JWT, platform, FastAPI, and business proofs separately |
-| Create, test, and delete an app registration per run | Use a governed durable registration and read-only per-run verification |
-| Add broad audiences until 401 disappears | Derive audiences only from the same resource API token contract |
-| Treat `preAuthorizedApplications` as an Easy Auth allowlist | Configure `allowedApplications` from `azp` or `appid` evidence |
-| Pair a v1 issuer with `/v2.0` | Use the metadata endpoint matching the emitted token version |
-| Use a delegated CLI token in production CI | Use managed identity, workload federation, certificate, or approved secret |
-| Request a Graph permission for a custom API | Request the custom API scope or app role from that resource |
-| Log the JWT to inspect it | Decode in memory and emit only redacted booleans |
-| Diagnose auth before deployment succeeds | Prove provision and package deployment first |
-| Delete all app registrations during cleanup | Delete only resources with explicit transient ownership |
+Enter this path only after a fresh-setup gate fails or when the user explicitly
+asks to troubleshoot an existing deployment.
 
-## Report structure
+- Token issuance, consent, or Conditional Access failure: load
+  [references/governance.md](references/governance.md).
+- Provider, region, provision, package, startup, or network failure: load
+  [references/deployment-and-networking.md](references/deployment-and-networking.md).
+- HTTP 401 or 403: load
+  [references/diagnostics.md](references/diagnostics.md) and use
+  [scripts/easy_auth_probe.py](scripts/easy_auth_probe.py).
+- Load [references/friction-analysis.md](references/friction-analysis.md) only
+  when the immediate evidence does not isolate the failure.
 
-Return this structure:
+Do not load every debugging reference speculatively. Stop at the first failed
+layer, report its evidence as `live`, `local static`, `documented`, or
+`empirical`, and leave later layers as `not run`.
+
+## Setup result
+
+For a clean setup, report only:
 
 ```markdown
-# Easy Auth validation report
-## Architecture decision
-## Token issuance proof
-## JWT contract proof
-## Easy Auth authentication proof
-## Easy Auth authorization proof
-## FastAPI ingress proof
-## Business or database proof
-## Infrastructure and deployment proof
-## Governance and consent status
-## Cleanup and retained resources
-## Limitations and evidence classification
+## Scaffold
+## Resource API
+## Provision and deployment
+## Easy Auth controls
+## First FastAPI 200
+## Remaining production decisions
 ```
 
-For each proof, state `pass`, `fail`, `blocked`, or `not run`; identify evidence
-as `live`, `local static`, `documented`, or `empirical`; and name the next
-bounded action. Never report later layers as passed when an earlier layer is
-blocked.
+Use the longer layered report in `references/diagnostics.md` only for a failed
+or audited deployment.
 
 ## References
 
 - Registration and flow design:
   [references/architecture-and-flows.md](references/architecture-and-flows.md)
+- Fresh Functions Flex setup:
+  [references/fresh-setup.md](references/fresh-setup.md)
 - Easy Auth and Bicep:
   [references/easy-auth-configuration.md](references/easy-auth-configuration.md)
 - Hosting and deployment:

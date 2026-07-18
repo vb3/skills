@@ -19,4 +19,8 @@ skills/
 
 1. Create a directory under `skills/` named for the skill (kebab-case).
 2. Add a `SKILL.md` with a clear name, a description of when to use it, and steps.
-3. Keep skills tool-agnostic where possible so they work across agents.
+3. Add `evals/evals.json` with realistic prompts, expected outputs, and
+   objective expectations. Include representative success cases and difficult
+   edge cases, then compare runs with and without the skill using
+   `skill-creator`.
+4. Keep skills tool-agnostic where possible so they work across agents.

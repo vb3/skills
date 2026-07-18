@@ -14,18 +14,25 @@ The script at
 - reads only a bounded response body;
 - marks whether the FastAPI probe returned `layer: fastapi`.
 
-Existing Azure CLI session:
+Approved delegated public client:
 
 ```bash
-python3 "<skill-directory>/scripts/easy_auth_probe.py" \
+uv run --with msal python \
+  "<skill-directory>/scripts/easy_auth_probe.py" \
   --endpoint "https://<site-host>" \
   --tenant-id "$ENTRA_TENANT_ID" \
   --resource-app-id "$ENTRA_RESOURCE_APP_ID" \
   --allowed-client-id "$CALLER_CLIENT_ID" \
   --expected-scope access_as_user \
-  --azure-cli-scope "api://$ENTRA_RESOURCE_APP_ID/access_as_user" \
+  --device-code-client-id "$CALLER_CLIENT_ID" \
+  --device-code-timeout 600 \
   --include-wrong-audience-control
 ```
+
+This device-code flow presents the actual approved caller in the token's
+`azp`. Use `--azure-cli-scope` only when Azure CLI itself is intentionally
+preauthorized and present in Easy Auth `allowedApplications`; it cannot mint a
+token whose `azp` impersonates another client registration.
 
 App-only or managed identity token from a secure producer:
 

@@ -37,6 +37,19 @@
         "Preserves durable app registrations and consent while cleaning only explicitly owned transient resources.",
         "Reports token, platform authentication, FastAPI, and business or database proof separately with an explicit live, local static, documented, or empirical evidence label."
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "I have an empty repository and need a fresh Python FastAPI API on Azure Functions Flex Consumption protected by Microsoft Entra Easy Auth. Use azd and Bicep, create or reuse a durable resource API registration for one approved delegated caller, avoid unnecessary Graph permissions or secrets, and get me to the first authenticated 200. Do not load deep troubleshooting unless a setup gate fails.",
+      "expected_output": "A short executable fresh-setup path that scaffolds the FastAPI Functions project and Flex infrastructure, establishes the durable resource API contract, configures Easy Auth, deploys with azd, and runs the first controlled HTTP matrix before conditionally entering diagnostics.",
+      "files": [],
+      "expectations": [
+        "The plan starts with the bundled scaffold_fastapi_flex.py command and accurately names its generated FastAPI, Functions host, local settings, azure.yaml, and Flex Bicep artifacts.",
+        "The plan uses the bundled bootstrap_resource_app.py read-only-first workflow for a durable v2 delegated resource API with no unnecessary Graph permissions or credentials, and treats tenant consent as conditional.",
+        "The plan explains that the v2 GUID is the API audience and maps the approved caller client ID to Easy Auth allowedApplications separately from resource-app preAuthorizedApplications.",
+        "The plan orders local proof, tests, Bicep compilation, read-only Azure preflight, azd provision, azd deploy, and the no-token, wrong-audience, and approved-token controls without claiming those Azure mutations were executed.",
+        "The plan states that diagnostics and friction analysis are loaded only after a named setup gate fails and does not front-load their detailed content."
+      ]
     }
   ]
 }

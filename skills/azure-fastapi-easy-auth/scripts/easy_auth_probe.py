@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -18,6 +19,7 @@ from typing import Any
 
 
 DEFAULT_TIMEOUT_SECONDS = 20.0
+DEFAULT_DEVICE_CODE_TIMEOUT_SECONDS = 600.0
 MAX_RESPONSE_BYTES = 65_536
 JWT_PATTERN = re.compile(
     r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+"
@@ -191,6 +193,47 @@ def acquire_cli_token(
     return token
 
 
+def acquire_device_code_token(
+    *,
+    tenant_id: str,
+    client_id: str,
+    scope: str,
+    authority_host: str,
+    timeout: float,
+) -> str:
+    try:
+        import msal
+    except ImportError as error:
+        raise RuntimeError(
+            "MSAL is required for device-code acquisition; install package msal"
+        ) from error
+
+    client = msal.PublicClientApplication(
+        client_id,
+        authority=f"{authority_host.rstrip('/')}/{tenant_id}",
+    )
+    flow = client.initiate_device_flow(scopes=[scope])
+    if not isinstance(flow, dict) or "user_code" not in flow:
+        raise RuntimeError("Microsoft Entra did not start a device-code flow")
+    message = flow.get("message")
+    if isinstance(message, str) and message:
+        print(message, file=sys.stderr, flush=True)
+    flow["expires_at"] = min(
+        float(flow.get("expires_at", time.time() + timeout)),
+        time.time() + timeout,
+    )
+    result = client.acquire_token_by_device_flow(flow)
+    token = result.get("access_token") if isinstance(result, dict) else None
+    if not isinstance(token, str) or not token:
+        error_code = (
+            result.get("error", "unknown_error")
+            if isinstance(result, dict)
+            else "invalid_response"
+        )
+        raise RuntimeError(f"Device-code token acquisition failed: {error_code}")
+    return token
+
+
 def acquire_wrong_audience_token(
     *,
     tenant_id: str,
@@ -317,6 +360,11 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--token-stdin", action="store_true")
     source.add_argument("--azure-cli-scope")
+    source.add_argument("--device-code-client-id")
+    parser.add_argument(
+        "--authority-host",
+        default="https://login.microsoftonline.com",
+    )
     parser.add_argument("--include-wrong-audience-control", action="store_true")
     parser.add_argument("--probe-path", default="/auth/probe")
     parser.add_argument(
@@ -324,13 +372,29 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         type=float,
         default=DEFAULT_TIMEOUT_SECONDS,
     )
+    parser.add_argument(
+        "--device-code-timeout",
+        type=float,
+        default=DEFAULT_DEVICE_CODE_TIMEOUT_SECONDS,
+    )
     args = parser.parse_args(argv)
     if not 1 <= args.timeout <= 120:
         parser.error("--timeout must be between 1 and 120 seconds")
-    if args.include_wrong_audience_control and not args.azure_cli_scope:
+    if not 60 <= args.device_code_timeout <= 1800:
         parser.error(
-            "--include-wrong-audience-control requires --azure-cli-scope"
+            "--device-code-timeout must be between 60 and 1800 seconds"
         )
+    if (
+        args.include_wrong_audience_control
+        and not args.azure_cli_scope
+        and not args.device_code_client_id
+    ):
+        parser.error(
+            "--include-wrong-audience-control requires Azure CLI or "
+            "device-code acquisition"
+        )
+    if args.device_code_client_id and not args.expected_scope:
+        parser.error("--device-code-client-id requires --expected-scope")
     return args
 
 
@@ -345,13 +409,37 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not token:
                 raise ValueError("No token was received on standard input")
             source = "stdin"
-        else:
+        elif args.azure_cli_scope:
             token = acquire_cli_token(
                 tenant_id=tenant_id,
                 scope=args.azure_cli_scope,
                 timeout=args.timeout,
             )
             source = "azure-cli"
+        else:
+            caller_client_id = _guid(
+                args.device_code_client_id,
+                "device_code_client_id",
+            )
+            allowed_clients = {
+                _guid(value, "allowed_client_id")
+                for value in args.allowed_client_id
+            }
+            if allowed_clients and caller_client_id not in allowed_clients:
+                raise ValueError(
+                    "device-code client must be included in "
+                    "--allowed-client-id"
+                )
+            token = acquire_device_code_token(
+                tenant_id=tenant_id,
+                client_id=caller_client_id,
+                scope=(
+                    f"api://{resource_app_id}/{args.expected_scope}"
+                ),
+                authority_host=normalize_endpoint(args.authority_host),
+                timeout=args.device_code_timeout,
+            )
+            source = "msal-device-code"
 
         claims = parse_jwt_claims(token)
         claim_summary = summarize_claims(

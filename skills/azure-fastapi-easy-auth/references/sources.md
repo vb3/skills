@@ -28,6 +28,7 @@ Documented guarantees used by this skill:
 - [Access token claims reference](https://learn.microsoft.com/entra/identity-platform/access-token-claims-reference)
 - [Microsoft Graph format application manifest](https://learn.microsoft.com/entra/identity-platform/reference-microsoft-graph-app-manifest)
 - [OAuth 2.0 client credentials flow](https://learn.microsoft.com/entra/identity-platform/v2-oauth2-client-creds-grant-flow)
+- [MSAL Python device-code flow](https://learn.microsoft.com/entra/identity-platform/scenario-desktop-acquire-token-device-code-flow)
 - [Add app roles to an application](https://learn.microsoft.com/entra/identity-platform/howto-add-app-roles-in-apps)
 - [Configure an application to trust a managed identity](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-config-app-trust-managed-identity)
 - [Grant tenant-wide admin consent](https://learn.microsoft.com/entra/identity/enterprise-apps/grant-admin-consent)
@@ -43,6 +44,9 @@ Documented token facts used by this skill:
 
 ## Deployment and hosting
 
+- [FastAPI on Azure Functions sample](https://github.com/Azure-Samples/fastapi-on-azure-functions)
+- [Flex Consumption Bicep quickstart](https://learn.microsoft.com/azure/azure-functions/functions-create-first-function-bicep)
+- [Managed-identity Flex Bicep template](https://github.com/Azure/azure-quickstart-templates/tree/master/quickstarts/microsoft.web/function-app-flex-managed-identities)
 - [Azure Functions Flex Consumption plan](https://learn.microsoft.com/azure/azure-functions/flex-consumption-plan)
 - [Create and manage Flex Consumption apps](https://learn.microsoft.com/azure/azure-functions/flex-consumption-how-to)
 - [Deploy files to App Service](https://learn.microsoft.com/azure/app-service/deploy-zip)
