@@ -93,13 +93,28 @@ cheaper than Terra `low`.
 |---|---|---|---|---|---|
 | **Luna** | 0.35x | 1x | 1.75x | 2.5x | 4x |
 | **Terra** | 3.5x | 10x | 17.5x | 25x | 40x |
-| **Sol** | 8.75x | 25x | 44x | 62x | 100x |
+| **Sol** | 8.75x | 25x | 43.75x | 62.5x | 100x |
+
+**Method and its limits.** Effort multipliers are the midpoints of the ranges
+above, so `low` is 0.35x and `high` is 1.75x. The cross-model ratio is 1:10:25
+for Luna:Terra:Sol, which holds whether you normalize on input or output price,
+because the three models share the same input-to-output price ratio.
+
+The effort axis is the weak part. Effort mostly inflates reasoning and output
+tokens while input cost stays roughly fixed, so these behave as
+output-normalized figures rather than true end-to-end cost multipliers. A
+request with a large prompt and a short answer will show a much flatter effort
+curve than this grid implies. Treat the model axis as solid and the effort axis
+as directional.
+
+`SKILL.md` rounds these to whole numbers (9x, 44x, 62x). Do not read precision
+into any of them.
 
 ## Older OpenAI models
 
 | Model | Still worth routing to when |
 |---|---|
-| `gpt-5.5` | You need a well-characterized production model, or 24-hour extended prompt cache retention, which GPT-5.6 does not offer. Terra is the intended replacement for new work. |
+| `gpt-5.5` | You need a well-characterized production model, or 24-hour extended prompt cache retention, which GPT-5.6 does not offer. OpenAI positions Terra as the successor, but that is vendor positioning; this skill routes to Sol or Luna instead. |
 | `gpt-5.5-pro` | Low-frequency, large-context batch jobs where the 30-minute GPT-5.6 cache TTL is not enough. |
 | `gpt-5.4` | Validated legacy production deployments, including Bedrock and Azure, that were tuned against it. |
 | `gpt-5.3-codex` | Legacy integrations built on Codex-specific APIs. Superseded by Luna for new work, which is both cheaper and stronger on agentic coding. |

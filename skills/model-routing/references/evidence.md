@@ -6,10 +6,17 @@
 - **[B]** Third-party benchmark or measurement.
 - **[A]** Anecdotal practitioner report.
 
-## Terra is Pareto dominated
+## Terra is off the joint frontier
 
 This is the single finding the routing table leans on hardest, and it is the one
 most likely to invert on a price change.
+
+**State it precisely.** Terra is *not* strictly dominated by either sibling on
+its own: it scores higher than Luna (55 vs 51) and costs less than Sol. The
+claim is that the frontier traced jointly by Sol and Luna *across effort levels*
+lies outside Terra, so for a given Terra configuration there is usually a Luna or
+Sol configuration that is better on one axis without being worse on the other.
+Saying "Terra is dominated on both axes" is wrong and should not be repeated.
 
 **[B]** Artificial Analysis: "Luna and Sol are always on the Pareto frontier
 ahead of Terra. This means that for any Terra effort level, there is a Luna or
@@ -31,7 +38,9 @@ Sources:
 | GPT-5.5 | ~48 | higher |
 
 Luna delivers roughly 86% of Sol's score at roughly 20% of the cost. Terra sits
-between them without owning either end.
+between them without owning either end, which is the whole of the argument
+against it. Note that Terra beats Luna on score here; the case against Terra is
+positional, not that it is bad.
 
 **[V]** The dominance is a consequence of the 2026-07-30 price cut, which left
 Sol unchanged, cut Terra ~20%, and cut Luna ~80%. Before that date, Terra was a

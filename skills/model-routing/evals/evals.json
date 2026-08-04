@@ -30,11 +30,11 @@
     {
       "id": 3,
       "prompt": "I read a good writeup a couple of months ago that said GPT-5.6 Terra at medium is the best cost-performance worker configuration for agent pipelines. Should I standardize my subagents on that?",
-      "expected_output": "A correction: the advice predates the 2026-07-30 price cut and Terra is now dominated by Luna and Sol on both axes.",
+      "expected_output": "A correction: the advice predates the 2026-07-30 price cut, and Terra now sits off the cost-quality frontier that Luna and Sol jointly define.",
       "files": [],
       "expectations": [
         "Identifies that the recommendation is stale because of the 2026-07-30 price change, not because it was wrong when written.",
-        "States that Luna dropped roughly 80% and Terra roughly 20%, leaving Terra dominated on both intelligence and cost.",
+        "States that Luna dropped roughly 80% and Terra roughly 20%, putting Terra off the cost-quality frontier that Sol and Luna jointly define.",
         "Recommends a barbell of Sol for judgment work and Luna for verifiable work instead of standardizing on Terra.",
         "Notes that a measured eval on the user's own workload beats this general claim.",
         "Does not simply agree with the premise."
@@ -140,7 +140,7 @@
         "Justifies xhigh by the combination of an adversarial task, exhaustive search paying off, and no latency budget.",
         "Cites that security and code review is an officially named xhigh use case, and that GPT-5.6 showed unusually large gains on cybersecurity benchmarks.",
         "Does not jump straight to max.",
-        "Notes the stakes modifier from the output being customer-facing."
+        "Recognizes that the security review row already prices in the stakes, so the customer-facing modifier is not applied a second time and the answer stays at xhigh."
       ]
     },
     {
@@ -154,6 +154,32 @@
         "Recommends an explicit cache breakpoint after the stable prefix, prompt_cache_options mode explicit, and a stable prompt_cache_key.",
         "Recommends comparing cache_write_tokens against cached_tokens as the diagnostic.",
         "Does not immediately recommend downshifting the model."
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "One of eight parallel workers is applying a schema migration that ships to a customer. It's a throwaway spike branch, but the migration hits production data. Walk me through exactly which modifiers apply and what you end up with.",
+      "expected_output": "Modifier resolution per axis: at most one tier shift and one effort shift, no compounding, and the tier downshift blocked because production data has no adequate gate.",
+      "files": [],
+      "expectations": [
+        "Applies at most one tier shift and one effort shift rather than stacking every modifier that nominally matches.",
+        "Recognizes that the throwaway and fan-out modifiers both point the same direction and counts them once, taking the strongest rather than compounding.",
+        "Refuses the tier downshift because a migration against production data has no verification gate that catches the error class, and states that the throwaway framing does not waive the gate requirement.",
+        "Requires an approval gate before the destructive write.",
+        "Does not produce an effort level above max or a tier below the efficient tier."
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "My Luna workers have passed their test suites on 30 consecutive tasks and the reviewer has never flagged anything. Safe to drop them to low effort and skip the reviewer?",
+      "expected_output": "A silent gate is ambiguous evidence, so this justifies a monitored trial one step cheaper on a single axis at most, and the reviewer should be validated rather than removed.",
+      "files": [],
+      "expectations": [
+        "States that a gate which never fires is equally consistent with the model succeeding, the task being easy, and the gate being ineffective.",
+        "Declines to treat the clean record as proof that the cheaper setting is safe.",
+        "Recommends validating the gate, for example by feeding it a known-bad input or checking it has caught real failures before.",
+        "Permits a monitored trial of lower effort while keeping the reviewer, rather than making both changes at once.",
+        "Warns that passing tests is not the same as correct tests."
       ]
     }
   ]
