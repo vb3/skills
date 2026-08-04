@@ -1,0 +1,160 @@
+{
+  "skill_name": "model-routing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to fan out six subagents to migrate six independent modules from Newtonsoft.Json to System.Text.Json. Each module has full test coverage. Pick the model and reasoning effort for the workers and for the agent that reviews the combined result before I open the PR.",
+      "expected_output": "Efficient tier at high effort for the six workers because the test suite is the verification gate, and the frontier tier without downshifting for the reviewer.",
+      "files": [],
+      "expectations": [
+        "Routes the six workers to gpt-5.6-luna rather than the frontier tier, citing that fan-out multiplies cost.",
+        "Names the existing test coverage as the verification gate that makes the downshift safe.",
+        "Chooses high rather than low effort for the workers, on the basis that the work is mechanical but needs deliberation, not judgment.",
+        "Refuses to downshift the reviewer and routes it to gpt-5.6-sol.",
+        "Does not ask the user for permission before choosing models."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "What model should I use to write an ADR for how we'll handle multi-tenant data isolation in this customer's platform?",
+      "expected_output": "Frontier tier at high effort, justified in one line, with one cheaper alternative and its precondition.",
+      "files": [],
+      "expectations": [
+        "Recommends gpt-5.6-sol at high effort.",
+        "Justifies high effort by the combination of ambiguity, consequence, and the difficulty of reversing an architectural decision.",
+        "Answers in roughly one line rather than presenting the full routing matrix.",
+        "Offers exactly one cheaper alternative with the condition under which it would suffice.",
+        "Does not recommend xhigh or max as a starting point."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I read a good writeup a couple of months ago that said GPT-5.6 Terra at medium is the best cost-performance worker configuration for agent pipelines. Should I standardize my subagents on that?",
+      "expected_output": "A correction: the advice predates the 2026-07-30 price cut and Terra is now dominated by Luna and Sol on both axes.",
+      "files": [],
+      "expectations": [
+        "Identifies that the recommendation is stale because of the 2026-07-30 price change, not because it was wrong when written.",
+        "States that Luna dropped roughly 80% and Terra roughly 20%, leaving Terra dominated on both intelligence and cost.",
+        "Recommends a barbell of Sol for judgment work and Luna for verifiable work instead of standardizing on Terra.",
+        "Notes that a measured eval on the user's own workload beats this general claim.",
+        "Does not simply agree with the premise."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My subagent produced a beautifully reasoned, well-tested implementation of a caching layer. Problem is I wanted request coalescing, not caching. It was on Luna at medium. Should I bump it to xhigh and rerun?",
+      "expected_output": "No. This is a judgment failure, so the fix is a tier change or a better prompt, not more effort.",
+      "files": [],
+      "expectations": [
+        "Diagnoses solving the wrong problem as a judgment failure rather than a deliberation failure.",
+        "States explicitly that raising reasoning effort will not fix it and will produce a more thorough wrong answer.",
+        "Checks whether the prompt actually specified request coalescing before recommending any model change.",
+        "If the prompt was adequate, recommends moving up a tier to gpt-5.6-sol rather than raising effort.",
+        "Does not recommend xhigh."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I've been in a Codex session with Sol for about two hours. It's started contradicting decisions we made earlier, and it keeps re-fixing the same file in ways that undo previous work. I've bumped it from medium to high and it got worse. What now?",
+      "expected_output": "Long-session drift. Compact or split the session; do not escalate effort, which consumes more of the context window.",
+      "files": [],
+      "expectations": [
+        "Identifies this as the documented long-session drift pattern rather than a capability problem.",
+        "Explains that higher effort spends more of the context window on reasoning tokens and can make drift worse.",
+        "Recommends compacting history, restating objective and constraints, or splitting into fresh bounded subtasks.",
+        "Mentions that Codex applies a lower effective context limit than the API.",
+        "Recommends returning to medium effort rather than escalating further."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "My interactive coding loop is taking 40 seconds per turn on Sol high and it's breaking my flow. I don't want to lose answer quality. What do I change?",
+      "expected_output": "Drop effort one step before dropping tier, because effort dominates latency and tier carries the judgment.",
+      "files": [],
+      "expectations": [
+        "Recommends lowering reasoning effort before changing model.",
+        "Explains that effort is the dominant latency lever while tier carries judgment quality.",
+        "Suggests Sol at medium as the first move.",
+        "Does not immediately recommend dropping to the efficient tier.",
+        "May mention Sol fast mode as a latency option that trades price for speed."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "To save money, I want to move the agent that writes our customer-facing runbooks from Sol down to Luna. There's no test suite, obviously. Do it.",
+      "expected_output": "Refuse the downshift, because no verification gate exists and the output is customer-facing.",
+      "files": [],
+      "expectations": [
+        "Declines to downshift and names the absence of a verification gate as the reason.",
+        "Notes that customer-facing output is a stakes modifier that pushes effort up, not down.",
+        "Offers the alternative of a cheap generator plus a frontier reviewer, and explains that this is often cheaper than the frontier tier doing the whole task.",
+        "Does not comply solely because the user asked directly.",
+        "Does not suggest that saving cost is inherently wrong, only that this particular downshift is unguarded."
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "I have 40 GitHub issues in a mature C# repo, each a well-described bug with a reproduction. I want an agent to work through them producing PRs. Which model, and does it matter that we're an OpenAI-first shop?",
+      "expected_output": "This is the named non-OpenAI escape hatch: classic repository-issue patching is where Claude's Opus-class flagship leads.",
+      "files": [],
+      "expectations": [
+        "Recognizes single-issue repository patching as the SWE-Bench-shaped workload where Claude Opus 5 leads.",
+        "Presents the OpenAI-first default and the specific condition under which it is overridden, rather than switching vendors casually.",
+        "Notes that the SWE-Bench comparison is a third-party result and that Sol's exact figure is not vendor-confirmed.",
+        "Weighs the cost of switching harnesses against the expected gain.",
+        "Still gives a concrete OpenAI answer for the case where the user stays on OpenAI."
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "I set context_tier to long_context on all my subagents so they never run out of room. Reasonable default?",
+      "expected_output": "No. long_context is a capacity setting, not a quality setting, and wide context usually loses to narrow context on the same budget.",
+      "files": [],
+      "expectations": [
+        "States that long_context is not a quality setting and should be used only when input genuinely exceeds the default window.",
+        "Warns that it wastes budget and can dilute attention across irrelevant material.",
+        "Suggests splitting into bounded subtasks with a synthesis step as the usual better answer.",
+        "Does not recommend long_context as a general safety margin."
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Design the model assignment for a pipeline: one agent decomposes a feature request into tasks, eight agents implement tasks in parallel against a spec with acceptance tests, and one agent merges and validates. Cost is a real constraint here.",
+      "expected_output": "Frontier tier for the orchestrator and the final merger, efficient tier for the eight workers, with the acceptance tests named as the gate.",
+      "files": [],
+      "expectations": [
+        "Routes the decomposition agent to gpt-5.6-sol at medium or higher and explains that plan errors propagate to every worker.",
+        "Routes the eight parallel implementers to gpt-5.6-luna and names the acceptance tests as the verification gate.",
+        "Refuses to downshift the final merge and validation agent.",
+        "Explicitly states that if all eight workers genuinely needed frontier judgment, the decomposition is wrong.",
+        "Gives relative cost reasoning rather than inventing precise dollar figures."
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Give me the right reasoning effort for a security review of an authentication middleware we're shipping to a customer. It can run overnight.",
+      "expected_output": "Frontier tier at xhigh, one of the few cases where xhigh is the documented starting point.",
+      "files": [],
+      "expectations": [
+        "Recommends gpt-5.6-sol at xhigh.",
+        "Justifies xhigh by the combination of an adversarial task, exhaustive search paying off, and no latency budget.",
+        "Cites that security and code review is an officially named xhigh use case, and that GPT-5.6 showed unusually large gains on cybersecurity benchmarks.",
+        "Does not jump straight to max.",
+        "Notes the stakes modifier from the output being customer-facing."
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "My agent loop makes about 200 API calls an hour with a big stable system prompt and tool list. Costs are triple what I modeled. Model or effort problem?",
+      "expected_output": "Probably neither. On GPT-5.6, cache writes cost 1.25x input, so an unmarked dynamic suffix pays the write premium every turn without ever reading the cache.",
+      "files": [],
+      "expectations": [
+        "Identifies prompt caching configuration as the likely cause before recommending a model or effort change.",
+        "Explains that GPT-5.6 charges 1.25x for cache writes, unlike earlier models where writes were free.",
+        "Recommends an explicit cache breakpoint after the stable prefix, prompt_cache_options mode explicit, and a stable prompt_cache_key.",
+        "Recommends comparing cache_write_tokens against cached_tokens as the diagnostic.",
+        "Does not immediately recommend downshifting the model."
+      ]
+    }
+  ]
+}
