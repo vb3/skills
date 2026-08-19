@@ -1,0 +1,153 @@
+{
+  "skill_name": "tdd-with-agents",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to have you build a pricing engine from scratch: tiered rates, volume discounts, regional tax rules, and proration for mid-cycle plan changes. Use TDD.",
+      "expected_output": "Routes to design-first, produces the data model and full behavior list for review before writing any test or implementation, and explains in one or two lines why it is not doing incremental red-green.",
+      "files": [],
+      "expectations": [
+        "Produces a design artifact (data types, contracts, edge and error cases) before writing any test or implementation code.",
+        "Presents a behavior list for the user to review as the checkpoint, rather than asking the user to review test files.",
+        "States briefly that incremental red-green would let the first test lock in the data model, which is the hard part of this task.",
+        "Still writes tests before the implementation once the design is agreed, rather than dropping tests entirely.",
+        "Does not silently ignore the TDD request; it names what it is doing instead and why.",
+        "Does not claim TDD is proven harmful."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Users are reporting that proration returns a negative amount when someone downgrades on the last day of a billing cycle. Fix it.",
+      "expected_output": "Writes a failing test reproducing the reported case first, shows it red, then fixes the implementation without editing the test.",
+      "files": [],
+      "expectations": [
+        "Writes a test reproducing the reported failure before changing the implementation.",
+        "Runs the test and confirms it fails before making the fix.",
+        "Does not modify the test after it goes red.",
+        "Identifies this as the case where red-green genuinely earns its cost, because the red state is a reproduction rather than a ritual.",
+        "Does not route this to design-first.",
+        "Does not produce an up-front design artifact or enumerate a full behavior list before fixing, and keeps the change scoped to the reported defect.",
+        "Recommends checking whether the surrounding proration assertions would have caught this, rather than only closing the single case."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add a line to our AGENTS.md telling agents to always follow TDD with strict red-green-refactor on every task.",
+      "expected_output": "Pushes back before editing, explains that a blanket always-loaded TDD rule suppresses up-front design on exactly the greenfield work where design matters most, and offers a scoped alternative.",
+      "files": [],
+      "expectations": [
+        "Raises the objection before making the edit rather than editing and then commenting.",
+        "Explains that an always-loaded rule applies the ritual regardless of whether behavior is known or code already exists.",
+        "Offers a concrete alternative, such as a rule scoped to bug fixes and refactors plus a design-first rule for new features.",
+        "Mentions that agents comply with TDD instructions unreliably, so the rule costs prompt budget for uncertain benefit.",
+        "Complies if the user reaffirms the request rather than refusing outright."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "You generated about 200 tests for this service last week and coverage is at 94%. I'm comfortable shipping. Anything I should check?",
+      "expected_output": "Says coverage does not establish regression effectiveness, recommends an incremental mutation-testing run and a targeted read of the business-rule assertions, and notes what mutation testing still cannot tell them.",
+      "files": [],
+      "expectations": [
+        "States explicitly that coverage measures execution, not verification, and does not establish that the tests would catch a regression.",
+        "Recommends mutation testing as the sensor that measures assertion strength.",
+        "Recommends running it incrementally on changed files rather than the whole suite, on cost grounds.",
+        "Notes that mutation testing assumes the implemented behavior is the wanted behavior and cannot check test correctness.",
+        "Recommends a human read of the assertions for the handful of real business rules rather than all 200 tests.",
+        "Does not treat 94% coverage as reassuring."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Refactor the order fulfillment module. The test suite is green, so we've got a safety net.",
+      "expected_output": "Flags that an agent-written suite is not an independent safety net for an agent-proposed refactor, and establishes a real signal before refactoring.",
+      "files": [],
+      "expectations": [
+        "Identifies that the tests and the implementation came from the same source, so a green suite is weak evidence for this specific refactor.",
+        "Proposes an independent check before refactoring, such as a mutation run on the module or characterization tests pinning current behavior.",
+        "Routes to the characterization-test path rather than to design-first or to incremental TDD.",
+        "Does not begin refactoring on the strength of the green suite alone."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I hear you on design-first, but our team's engineering standard requires strict TDD and we get audited on it. Do it the strict way for this feature.",
+      "expected_output": "Complies with strict in-loop TDD, and adds the design-and-review step at the start and the refactor-and-design-review step at the end, which is the one adjustment with any supporting signal.",
+      "files": [],
+      "expectations": [
+        "Complies with the strict TDD request rather than substituting design-first.",
+        "Adds an explicit design step before the first test and a design review after the last one.",
+        "Proposes enumerating the full behavior list up front, and gives a reason tied to a failure mode of incremental TDD rather than to general good practice.",
+        "Does not present either adjustment as measured, proven, or evidence-backed improvement.",
+        "Does not re-argue the case after the user has decided."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Fowler's site published research proving TDD makes AI-generated code worse. Can you write that up for our engineering newsletter?",
+      "expected_output": "Corrects the characterization before drafting: it is one small exploratory experiment by Birgitta Böckeler, not proof, and the honest claim is that no benefit was found on small greenfield tasks.",
+      "files": [],
+      "expectations": [
+        "Corrects 'proving' and 'research' to an exploratory experiment with a very small sample.",
+        "Attributes it to Birgitta Böckeler rather than to Martin Fowler.",
+        "Names at least two concrete caveats, such as greenfield-only tasks, LLM-defined quality judgment, single model family, or that no run followed TDD perfectly.",
+        "States the finding accurately as no discernable benefit with a slight edge to non-TDD, not as TDD being harmful.",
+        "Mentions that mutation scores showed no difference between the two approaches.",
+        "Still drafts the newsletter piece after correcting the framing."
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Our mutation score on the billing package is 62%. Get it to 90%.",
+      "expected_output": "Pushes back on the score as a target, works the surviving mutants by priority instead, and warns that optimizing the number directly produces brittle implementation-pinning assertions.",
+      "files": [],
+      "expectations": [
+        "Warns that a mutation score is a sensor reading rather than a target, and that optimizing it directly yields assertions that pin implementation details.",
+        "Proposes starting from the files with the most survivors rather than raising the number uniformly.",
+        "Distinguishes survivors that reveal genuinely missing assertions from mutants that are equivalent or not worth killing.",
+        "Recommends querying the mutation report through a script rather than loading the full report into context.",
+        "Does not simply generate tests until the number reaches 90%."
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Add support for partial refunds to this 12-year-old billing service. About 40k lines, decent test coverage, nobody left on the team who wrote it.",
+      "expected_output": "Routes to the existing-code path: a read-first step naming where the change belongs and what it will not touch, then implementation, then an incremental mutation check on the changed files.",
+      "files": [],
+      "expectations": [
+        "Replaces the up-front design step with a read-first step stating where the change belongs, which existing contracts it touches, and what it will not change.",
+        "Explains that existing types and boundaries already constrain the design, so there is less for a design step to decide.",
+        "Treats silent regression as the dominant risk rather than design quality.",
+        "Recommends an incremental mutation check scoped to the changed files.",
+        "Labels the brownfield guidance as extrapolation beyond the greenfield evidence base."
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Here are the 14 scenarios our compliance team signed off on for transaction limit checks. I've written them as test cases already. Implement against them.",
+      "expected_output": "Takes the human-specified tests as the fixed specification, implements against them without editing them, and surfaces gaps rather than resolving them silently.",
+      "files": [],
+      "expectations": [
+        "Treats the supplied tests as the authoritative specification and implements against them.",
+        "Does not modify, reinterpret, or add assertions to the signed-off tests.",
+        "Reports any scenario it cannot satisfy or finds ambiguous back to the user instead of adjusting the test to fit the implementation.",
+        "Identifies this as the route where test-first genuinely applies pressure, because a human specified usage before implementation existed.",
+        "Does not run its own design-first pass over behavior the 14 scenarios already fix.",
+        "Flags separately, without editing them, any behavior it implemented that the 14 scenarios do not cover."
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Quick spike: I want to see whether we can pull the settlement data out of their SFTP drop and reconcile it. Don't know the shape of the files yet. Ballpark it.",
+      "expected_output": "Skips test discipline for the spike, says so explicitly, and names the point at which tests get backfilled.",
+      "files": [],
+      "expectations": [
+        "Explicitly declines to apply TDD or write tests up front for exploratory work.",
+        "States that the shape is not yet known, so tests would pin decisions that are about to change.",
+        "Names the condition for backfilling tests, namely once the shape stabilizes or the spike is promoted toward real use.",
+        "Recommends a mutation check on the backfilled tests at that point rather than relying on coverage.",
+        "Does not silently produce an untested implementation without flagging that the discipline was deliberately skipped."
+      ]
+    }
+  ]
+}
