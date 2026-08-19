@@ -1,7 +1,8 @@
 # Model map
 
-**Last verified: 2026-08-04.** This is the volatile half of the skill. When
-anything here changes, update this file and restamp the date. The tier logic in
+**Model and pricing facts last verified: 2026-08-04. VS Code runSubagent labels
+last verified: 2026-08-19.** This is the volatile half of the skill. When
+anything here changes, update the affected verification date. The tier logic in
 `SKILL.md` is designed to survive without edits.
 
 ## OpenAI GPT-5.6 family
@@ -150,6 +151,24 @@ for bounded, tool-heavy workflows with predictable output schemas.
 Source: [OpenAI migration guide](https://developers.openai.com/api/docs/guides/latest-model).
 
 ## Harness syntax
+
+### VS Code runSubagent
+
+The VS Code `runSubagent` tool uses exact model display names in its `model`
+field, not API or Copilot CLI IDs. Translate the routed tier before dispatch:
+
+| Tier | API or CLI model ID | `runSubagent` model value |
+|---|---|---|
+| Frontier | `gpt-5.6-sol` | `GPT-5.6 Sol (copilot)` |
+| Balanced | `gpt-5.6-terra` | `GPT-5.6 Terra (copilot)` |
+| Efficient | `gpt-5.6-luna` | `GPT-5.6 Luna (copilot)` |
+
+Use the exact available-model labels returned by the tool when they differ from
+this table. The current `runSubagent` schema exposes `model` but not reasoning
+effort or context tier. Still choose all three routing axes (tier, effort, and
+context tier) before dispatch, but encode only the controls the host supports
+and state that effort or context is not host-enforced. Putting an effort request
+in the worker prompt is task guidance, not a substitute for a harness control.
 
 ### Copilot CLI
 

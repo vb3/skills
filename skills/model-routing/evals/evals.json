@@ -181,6 +181,19 @@
         "Permits a monitored trial of lower effort while keeping the reviewer, rather than making both changes at once.",
         "Warns that passing tests is not the same as correct tests."
       ]
+    },
+    {
+      "id": 15,
+      "prompt": "I am in VS Code using runSubagent. Dispatch a bounded RPI Planner worker whose edits will be checked by the primary planner and then a frontier critique. Pick the worker model and effort, and give me the exact runSubagent model value.",
+      "expected_output": "Efficient tier at medium effort for the bounded planning worker, encoded as the VS Code display name GPT-5.6 Luna (copilot), with effort identified as selected but not enforceable through the current runSubagent schema.",
+      "files": [],
+      "expectations": [
+        "Routes the bounded worker to the efficient tier because the primary-planner check and independent frontier critique are explicit verification gates.",
+        "Selects medium effort for planning rather than silently dropping the effort decision.",
+        "Uses the exact runSubagent display name GPT-5.6 Luna (copilot), not the API or CLI ID gpt-5.6-luna.",
+        "States that the current runSubagent schema does not expose a reasoning-effort field, so the selected effort is not host-enforced.",
+        "Does not claim that adding effort wording to the worker prompt is equivalent to a harness reasoning-effort control."
+      ]
     }
   ]
 }

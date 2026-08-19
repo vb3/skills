@@ -5,7 +5,7 @@ description: Choose the right model and reasoning effort for a task. Use this sk
 
 # Model Routing
 
-Two independent choices, made in this order:
+Two independent routing choices, then an encoding step:
 
 1. **Model tier** is set primarily by how much *judgment* the task needs.
    Judgment means deciding what should be done when the request is ambiguous,
@@ -15,14 +15,21 @@ Two independent choices, made in this order:
 2. **Reasoning effort** is set by how much *deliberation* the task needs. That
    means steps to plan, branches to consider, and self-verification to perform
    before answering.
+3. **Host encoding** translates those choices into the active harness. Before
+   dispatch, identify the harness and use its exact model namespace and exposed
+   controls from [references/model-map.md](references/model-map.md#harness-syntax).
+   Model IDs and display names are not portable between harnesses. When the host
+   does not expose effort or context controls, keep the routing choice in the
+   rationale, state that the axis is not enforced, and do not represent prompt
+   wording as an equivalent control.
 
-These are not substitutes. Raising effort gives a weaker model more time to
-explore; it does not give it better taste. A cheap model at max effort will
-still confidently execute the wrong plan. Conversely, a frontier model at low
-effort still brings its judgment but may skip verification steps.
+The first two choices are not substitutes. Raising effort gives a weaker model
+more time to explore; it does not give it better taste. A cheap model at max
+effort will still confidently execute the wrong plan. Conversely, a frontier
+model at low effort still brings its judgment but may skip verification steps.
 
-Because the axes are independent, ask two separate questions and do not let the
-answer to one bias the other. "This request is ambiguous" argues for the
+Because these two axes are independent, ask two separate questions and do not
+let the answer to one bias the other. "This request is ambiguous" argues for the
 frontier tier and says nothing about effort. "This has many steps and edge
 cases" argues for higher effort and says nothing about tier. An ambiguous but
 mechanically simple change is correctly routed to a frontier model at low
@@ -144,12 +151,18 @@ order to each axis. Within one axis, stop at the first rule that settles it.
 
 **Role in the workflow**
 
-- **Orchestrator or planner**: never downshift. The plan is the highest-leverage
-  artifact in the run, and every worker inherits its errors.
-- **Fan-out worker** (one of several parallel agents doing bounded work): use
-  the efficient tier if a verification gate exists. If the row already routes to
-  the efficient tier, leave it there. Waste multiplies across parallel agents,
-  and so does a bad model choice.
+Classify role by decision authority, not by the agent's name or the task noun.
+A worker named "Planner" is still a worker when it owns only a bounded section
+and a parent evaluates its return.
+
+- **Orchestrator or planning owner**: never downshift. This role owns
+  decomposition, cross-task decisions, or final plan synthesis, and every worker
+  inherits its errors.
+- **Fan-out or bounded worker**: use the efficient tier if a verification gate
+  exists. This includes bounded planning assignments that cannot revise the
+  overall plan without parent approval. If the row already routes to the
+  efficient tier, leave it there. Waste multiplies across parallel agents, and
+  so does a bad model choice.
 - **Final reviewer or synthesizer**: never downshift. This is the last chance to
   catch an error, so it needs judgment, not throughput. Route a reviewer by the
   artifact it is reviewing: reviewing a design document uses the design document
