@@ -1,0 +1,106 @@
+{
+  "skill_name": "local-hve-core",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Wire this repository to my local HVE-Core clone at ~/repos/forks/microsoft-hve-core. Do not install the extension.",
+      "expected_output": "A local .hve-core symlink, dynamically generated VS Code chat locations, local Git exclusion, and validation without marketplace installation.",
+      "files": [],
+      "expectations": [
+        "Creates a project-root .hve-core symlink resolving to the supplied absolute clone path.",
+        "Adds exactly one .hve-core rule to the repository-local path returned by git rev-parse --git-path info/exclude rather than the shared .gitignore.",
+        "Configures agents, prompts, instructions, skills, and hooks through project-relative .hve-core paths.",
+        "Each chat.*Locations value is a JSON object mapping paths to boolean true, not an array.",
+        "Excludes installer and experimental skill packages by default.",
+        "Does not install or modify a marketplace extension."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use my local HVE-Core fork for this project. It already has a .vscode/settings.json with Python and editor settings, so preserve those.",
+      "expected_output": "The existing settings remain intact while HVE-Core chat location maps are merged surgically.",
+      "files": [],
+      "expectations": [
+        "Preserves unrelated Python, editor, and existing chat location settings.",
+        "Adds only missing HVE-Core location entries.",
+        "Preserves JSONC comments when the existing file uses JSONC.",
+        "Keeps every chat.*Locations setting as an object map from path to boolean true.",
+        "Every newly enabled path exists as a directory."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Set up local HVE-Core here. There is already a real .hve-core directory from an older experiment.",
+      "expected_output": "The collision is surfaced and no existing directory is replaced without explicit approval.",
+      "files": [],
+      "expectations": [
+        "Detects that .hve-core is an existing directory rather than the requested symlink.",
+        "Stops before deleting, moving, or replacing the directory.",
+        "Requests an explicit collision disposition from the user or reports that approval is required when non-interactive.",
+        "Leaves .hve-core contents, VS Code settings, Git excludes, and unrelated worktree state unchanged."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Link this project to my local HVE-Core clone and include the experimental agents and skills too.",
+      "expected_output": "The normal local wiring includes experimental component directories because the user explicitly opted in.",
+      "files": [],
+      "expectations": [
+        "Creates a project-root .hve-core symlink resolving to the supplied local clone.",
+        "Includes experimental locations for every artifact type where that directory exists.",
+        "Includes an experimental subagents directory when present.",
+        "Still excludes the installer skill package.",
+        "Every configured experimental path exists as a directory."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Set up local HVE-Core here. A regular file named .hve-core already exists and contains data I need.",
+      "expected_output": "The regular-file collision is reported and setup stops without mutating the project.",
+      "files": [],
+      "expectations": [
+        "Detects that .hve-core is a regular file.",
+        "Stops before deleting, moving, replacing, or writing inside .hve-core.",
+        "Requests an explicit collision disposition from the user or reports that approval is required when non-interactive.",
+        "Leaves the file bytes, VS Code settings, Git excludes, and unrelated worktree state unchanged."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Wire this project to ~/repos/forks/microsoft-hve-core. The existing .hve-core symlink points to a different checkout.",
+      "expected_output": "The mismatched symlink and both targets are reported, and setup stops without replacing the link.",
+      "files": [],
+      "expectations": [
+        "Detects that .hve-core resolves to a different target than the requested clone.",
+        "Reports both the existing and requested targets.",
+        "Stops before unlinking or replacing the symlink.",
+        "Leaves the symlink, alternate target, VS Code settings, Git excludes, and unrelated worktree state unchanged."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Wire this linked Git worktree to my local HVE-Core clone, then verify that running the same setup again makes no changes.",
+      "expected_output": "The worktree uses the repository-local exclude returned by git rev-parse --git-path info/exclude and a second run is idempotent.",
+      "files": [],
+      "expectations": [
+        "Creates or reuses a project-root .hve-core symlink resolving to the supplied clone.",
+        "Writes exactly one .hve-core rule to the path returned by git rev-parse --git-path info/exclude.",
+        "Preserves unrelated exclude rules even when the original file lacks a trailing newline.",
+        "Uses git check-ignore -v --no-index to validate local rule attribution.",
+        "A second run leaves symlink metadata, settings bytes, exclude bytes, Git status, source state, and extension state unchanged."
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Wire this project to local HVE-Core, but ~/repos/forks/microsoft-hve-core does not exist yet.",
+      "expected_output": "Setup stops and the user is offered help cloning the official repository into the default local path.",
+      "files": [],
+      "expectations": [
+        "Expands the default path relative to the current user's home directory.",
+        "Stops before creating .hve-core, VS Code settings, or Git exclude entries.",
+        "Offers to work with the user to clone https://github.com/microsoft/hve-core.git into ~/repos/forks/microsoft-hve-core.",
+        "Does not silently clone or choose a different destination."
+      ]
+    }
+  ]
+}
