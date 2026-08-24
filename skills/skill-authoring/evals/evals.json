@@ -1,0 +1,170 @@
+{
+  "skill_name": "skill-authoring",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want a skill that sets up my local dev environment: creates a symlink, appends a line to .git/info/exclude, merges some entries into .vscode/settings.json, and then verifies all of it. Write it.",
+      "expected_output": "Routes the deterministic mutation and verification into a bundled script with an exit-code contract, keeps user interaction and reporting in prose, and produces SKILL.md plus the script and evals.",
+      "files": [],
+      "expectations": [
+        "Identifies the symlink, exclude-file, settings merge, and verification steps as low-freedom work belonging in a bundled script.",
+        "Keeps user-facing decisions and the final report in SKILL.md prose rather than in the script.",
+        "Gives the script a non-interactive argparse interface with distinct exit codes per failure gate.",
+        "Specifies structured output the agent can branch on rather than prose the agent must parse.",
+        "Requires the script to be idempotent so a second run is a no-op.",
+        "Creates evals/evals.json alongside the skill."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write me a skill for reviewing pull requests in our house style. It should weigh readability, test coverage, and whether the change matches the ticket.",
+      "expected_output": "Stays in prose because the task is judgment-driven, and does not invent a script for it.",
+      "files": [],
+      "expectations": [
+        "Classifies PR review as high-freedom work where multiple approaches are valid and context decides.",
+        "Does not bundle a script to perform the review judgment.",
+        "Expresses the guidance as goals and constraints rather than a rigid step sequence.",
+        "Does not claim the skill needs a script in order to be acceptable."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My skill never seems to activate. It is installed at ~/.copilot/skills/db-helper/ and `copilot skill list` shows it as enabled. Here it is. The instructions inside are really detailed and correct.\n\n---\nname: db-helper\ndescription: Helps with the database.\n---\n\n# DB Helper\n\n(200 lines of correct, detailed instructions)",
+      "expected_output": "Confirms the skill is discoverable and enabled, then diagnoses the description as the cause and rewrites it with concrete triggering vocabulary, without reworking the body.",
+      "files": [],
+      "expectations": [
+        "Confirms the skill is installed in a discovered location and enabled before blaming the description.",
+        "States that retrieval matches against the description only, so the body's quality is irrelevant to activation.",
+        "Rewrites the description to lead with what the skill does plus an explicit 'Use this skill when' clause.",
+        "Adds concrete vocabulary a user would actually type, such as tool names, commands, or error strings.",
+        "Does not attribute the failure to the length or wording of the skill body."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this skill of mine. Step 3 says to exclude the `installer` and `experimental` packages, and step 6 configures the parent directory that contains all the packages including those two.",
+      "expected_output": "Reports the contradiction between two statements of one rule as a defect and proposes the single-statement fix.",
+      "files": [],
+      "expectations": [
+        "Identifies that one rule is stated in two places and that the copies now disagree.",
+        "Reports it as a defect with severity rather than as a wording preference.",
+        "Proposes expressing the exclusion rule exactly once so both steps become consistent.",
+        "Does not resolve the contradiction by adding a third statement or a clarifying note."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Add a validation step to my skill: it should confirm with `copilot skill list --json` that every directory I registered with `copilot skill add` actually got registered.",
+      "expected_output": "Runs the command to establish its real output shape before writing the assertion, and discovers that it reports skills rather than registered directories.",
+      "files": [],
+      "expectations": [
+        "Runs `copilot skill list --json` and inspects real output before writing the validation step.",
+        "Determines that entries describe individual skills whose path is a leaf skill directory, not the registered directory.",
+        "Writes the check against the verified shape, for example prefix matching or reading skillDirectories from settings.",
+        "Does not write a plausible-sounding assertion based on the command's name alone."
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "My SKILL.md is 900 lines. Should I break it up?",
+      "expected_output": "Applies progressive disclosure by criterion, splitting volatile, long, or mutually exclusive content into references and keeping the decision spine in SKILL.md.",
+      "files": [],
+      "expectations": [
+        "Recommends splitting because the body is loaded whole on trigger and competes with conversation context.",
+        "Splits on volatility, length, or mutual exclusivity rather than by topic for tidiness.",
+        "Keeps the routing or decision logic in SKILL.md and moves detail into references/.",
+        "Notes the roughly 5000-token guidance for the body as a recommendation, not a hard limit."
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "I want my skill to always have the current git diff available, so I'll put a line with !`git diff HEAD` in the SKILL.md. I use both Copilot CLI and Claude Code.",
+      "expected_output": "Flags the syntax as a Claude Code extension that will not work in Copilot CLI, and offers the portable alternative.",
+      "files": [],
+      "expectations": [
+        "States that dynamic command injection with the ! syntax is a Claude Code extension and is not in the open spec.",
+        "States that it does not work in Copilot CLI, where the line would be treated as literal text.",
+        "Offers the portable alternative of instructing the agent to run the command as a normal step.",
+        "Does not present the syntax as generally available."
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Here's the script for my new skill. It does the whole setup in one shot and prints a summary at the end so the user knows what happened.",
+      "expected_output": "Accepts the scripting decision but requires an exit-code contract, structured output, idempotency, and tests, and moves the user-facing summary back to the agent.",
+      "files": [],
+      "expectations": [
+        "Requires distinct exit codes per failure gate instead of a single pass/fail.",
+        "Requires structured output on stdout that the agent can branch on.",
+        "Requires the script to be idempotent on a second run.",
+        "Requires unit tests, on the grounds that verifiability is the main justification for scripting.",
+        "Moves the human-readable summary out of the script and into the agent's reporting step."
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Write a skill that wires up a project, and use json5 to parse the JSONC settings file so we keep the comments.",
+      "expected_output": "Checks whether the dependency is actually available and handles its absence rather than assuming it.",
+      "files": [],
+      "expectations": [
+        "Verifies whether the parser is available rather than assuming it is installed.",
+        "Notes that a dependency absent on a clean machine turns the whole skill into a failure.",
+        "Prefers a standard-library approach, or declares the requirement explicitly in frontmatter or documentation.",
+        "Provides a defined behavior for the comment-preserving case rather than silently destroying comments."
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Review the local-hve-core skill in this repo at skills/local-hve-core/.",
+      "expected_output": "Applies the review order against the real files, leading with availability and trigger quality, and reports defects with severity instead of rewriting.",
+      "files": [],
+      "expectations": [
+        "Reads the actual SKILL.md and evals in the named directory rather than reviewing from assumption.",
+        "Checks the description against how a user would actually phrase the request, first.",
+        "Checks whether any step makes the model re-derive a deterministic procedure.",
+        "Checks for rules stated in more than one place and whether the copies agree.",
+        "Verifies claims about command behavior against the real commands rather than accepting them.",
+        "Checks whether evals cover failure branches and not only the happy path.",
+        "Reports findings as defects with severity rather than returning a wholesale rewrite.",
+        "Runs scripts/validate_skill.py against the skill and clears or reports its findings."
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "I fixed a bug in skills/local-hve-core/: it asserted that `copilot skill list --json` reports registered directories, but it reports individual skills. Anything else I should do before I commit?",
+      "expected_output": "Requires adding the eval that would have caught the bug, in the same change.",
+      "files": [],
+      "expectations": [
+        "Requires adding an eval expectation covering the fixed bug in the same change.",
+        "Requires the expectation to be objectively checkable rather than subjective.",
+        "Checks whether the same wrong assumption about the command appears elsewhere in the skill.",
+        "Runs scripts/validate_skill.py before the commit."
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Here is my new skill. Is it ready to commit?\n\n---\nname: Repo_Setup\ndescription: Sets things up.\n---\n\n# Repo Setup\n\nSee [the guide](references/guide.md) for details.",
+      "expected_output": "Runs the structural validator, reports the mechanical defects it finds, and does not hand-check them by eye.",
+      "files": [],
+      "expectations": [
+        "Runs scripts/validate_skill.py rather than inspecting the structure manually.",
+        "Reports that the name is not kebab-case and does not match the directory.",
+        "Reports the broken relative link to references/guide.md.",
+        "Reports that evals/evals.json is missing.",
+        "Also flags the vague description as a separate, non-mechanical defect."
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "I have two skills: one for authoring skills and one for writing prompts. Users keep getting the wrong one. Fix it.",
+      "expected_output": "Treats overlapping descriptions as the defect and adds negative boundaries to both.",
+      "files": [],
+      "expectations": [
+        "Identifies the overlap as a description problem rather than a body problem.",
+        "Adds an explicit 'Do not use for' clause naming the sibling skill to at least one description.",
+        "Differentiates the triggering vocabulary so each description claims distinct situations.",
+        "Recommends an eval where a near-miss phrasing must not load the skill."
+      ]
+    }
+  ]
+}

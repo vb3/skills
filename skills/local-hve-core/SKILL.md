@@ -1,6 +1,6 @@
 ---
 name: local-hve-core
-description: Wire a project to a local HVE-Core clone through a .hve-core symlink and VS Code chat component locations. Use when the user asks to use, link, wire, develop against, or test a local HVE-Core checkout instead of installing the marketplace extension.
+description: Wire a project to a local HVE-Core clone through a .hve-core symlink, VS Code chat component locations, and Copilot CLI skill directories. Use when the user asks to use, link, wire, develop against, or test a local HVE-Core checkout instead of installing the marketplace extension.
 ---
 
 # Local HVE-Core
@@ -13,67 +13,67 @@ symlinks.
 
 ## Setup
 
-1. Resolve the target project's Git root and the absolute source clone path.
-   Read the target's repository instructions before changing files. If the
-   source clone does not exist, stop setup and offer to work with the user to
-   clone `https://github.com/microsoft/hve-core.git` into
-   `~/repos/forks/microsoft-hve-core`. Do not silently choose another location
-   or clone without the user's approval.
+All deterministic work lives in [scripts/wire_hve_core.py](scripts/wire_hve_core.py).
+Run it rather than performing the symlink, exclude, settings, or registration
+steps by hand. Your job is to resolve inputs, handle the gates it reports, and
+report the outcome.
 
-2. Run a read-only preflight before changing **any** target file:
+### Script contract
 
-   - target Git status;
-   - `.hve-core`;
-   - `.vscode/settings.json`;
-   - the repository-local exclude path from
-     `git rev-parse --git-path info/exclude`;
-   - source `.github/{agents,prompts,instructions,skills,hooks}` directories.
+```bash
+python3 "<skill-directory>/scripts/wire_hve_core.py" <check|apply|verify> \
+  --project-root <project> [--source <clone>]
+```
 
-   Continue only when the source contains the expected component roots.
+| Mode | Effect |
+| --- | --- |
+| `check` | Read-only. Reports current state and everything still pending |
+| `apply` | Creates the symlink, appends the exclude rule, registers Copilot CLI skill directories, and merges `.vscode/settings.json` |
+| `verify` | Read-only. Asserts the finished state and lists every failure |
 
-3. Classify `.hve-core` before making any target mutation:
+Every mode prints a JSON state object on stdout. Exit codes are gates:
 
-   | Current state | Required action |
-   | --- | --- |
-   | Path is absent | Continue with setup |
-   | Symlink resolves to the requested source | Reuse it and continue |
-   | Directory, regular file, broken symlink, or symlink to another target | Stop and ask the user how to handle the collision |
+| Code | Meaning | Your response |
+| --- | --- | --- |
+| 0 | Success | Continue |
+| 2 | Source clone missing | Offer to clone; see step 2 |
+| 3 | `.hve-core` collision | Stop and ask the user; see step 3 |
+| 4 | `.vscode/settings.json` is not strict JSON | Merge by hand; see step 5 |
+| 5 | Verification failed | Report `failures` verbatim; do not paper over them |
 
-   A collision is a hard stop. Do not remove, move, rename, overwrite, or write
-   inside `.hve-core`. Do not edit VS Code settings, Git excludes, or any other
-   project file before the user explicitly chooses a disposition. In
-   non-interactive execution, report the existing path type and exit without
-   mutation. For a mismatched symlink, report both its current resolved target
-   and the requested resolved source path.
+Defaults: source `~/repos/forks/microsoft-hve-core`. The `installer` and
+`experimental` packages are always excluded and cannot be enabled. The script
+expands `~`, resolves the project Git root, and generates locations from the
+clone as it exists now, so fork-specific packages are picked up automatically.
 
-4. When `.hve-core` is absent, create the project-root symlink:
+### Steps
 
-   ```bash
-   ln -s <absolute-source-clone> <project-root>/.hve-core
-   ```
+1. Read the target repository's instructions, confirm the source clone path,
+   then run `check`. If the user asks for experimental components, tell them
+   this skill does not support them and continue without them.
 
-5. Add `.hve-core` to the repository-local exclude file returned by
-   `git rev-parse --git-path info/exclude`. Do not construct this path by
-   appending `info/exclude` to `.git` or `git rev-parse --git-dir`; linked
-   worktrees may use a common Git directory for excludes. Keep this machine-
-   specific path out of the shared `.gitignore`. Append the rule only when an
-   exact `.hve-core` rule is absent, and ensure it begins on a new line when
-   the existing file lacks a trailing newline.
+2. If `check` exits 2, the source clone is missing. Stop and offer to work with
+   the user to clone `https://github.com/microsoft/hve-core.git` into
+   `~/repos/forks/microsoft-hve-core`. Do not clone silently or choose another
+   destination.
 
-6. Merge HVE-Core locations into `.vscode/settings.json`. Preserve every
-   unrelated setting and existing location. Generate entries from the current
-   clone rather than caching a package list:
+3. If `check` exits 3, `.hve-core` already exists as a directory, regular file,
+   broken symlink, or symlink to another target. This is a hard stop. Report
+   the `error` field, which names the conflicting type and, for a mismatched
+   symlink, both the current and requested targets. Ask the user for an
+   explicit disposition. In non-interactive execution, report that approval is
+   required and exit. Do not remove, move, rename, overwrite, or write inside
+   `.hve-core`, and do not run `apply` until the user chooses.
 
-   | Setting | Locations |
-   | --- | --- |
-   | `chat.agentFilesLocations` | Each direct directory under `.hve-core/.github/agents`; include its `subagents` directory when present |
-   | `chat.promptFilesLocations` | Each direct directory under `.hve-core/.github/prompts` |
-   | `chat.instructionsFilesLocations` | Each direct directory under `.hve-core/.github/instructions` |
-   | `chat.agentSkillsLocations` | `.hve-core/.github/skills` and each direct package directory except `installer` |
-   | `chat.hookFilesLocations` | Each direct directory under `.hve-core/.github/hooks` |
+4. Run `apply` with the same arguments. It is idempotent, so a second run is a
+   no-op that leaves every byte unchanged.
 
-   Each `chat.*Locations` setting must be a JSON object that maps each project-
-   relative `.hve-core/` path to boolean `true`:
+5. If `apply` exits 4, it completed everything except the VS Code settings
+   merge, because the file carries JSONC comments or a non-object
+   `chat.*Locations` value. It left the file untouched. Merge
+   `vscode_settings.missing_entries` from the JSON output by hand with a
+   surgical edit that preserves comments and formatting. Each setting is a JSON
+   object mapping each project-relative `.hve-core/` path to boolean `true`:
 
    ```json
    {
@@ -83,34 +83,35 @@ symlinks.
    }
    ```
 
-   Do not use an array of `{ "path": ..., "enabled": ... }` objects. Exclude
-   every directory named `experimental` by default. Include experimental
-   locations only when the user explicitly opts in.
+   Never convert a setting to an array of `{ "path": ..., "enabled": ... }`
+   objects, and never drop an unrelated setting or existing location.
 
-   If the settings file is JSONC, preserve its comments and formatting with a
-   surgical edit. If it is strict JSON, keep it valid JSON. Create the `.vscode`
-   directory and settings file when absent.
+6. Run `verify`. Resolve any reported failure before claiming success.
 
-7. Validate completion:
-
-   - `.hve-core` resolves to the requested source;
-   - every enabled `chat.*Locations` path exists and is a directory;
-   - `installer` and non-opted-in `experimental` skill locations are absent;
-   - `git check-ignore -v --no-index .hve-core` attributes the rule to the
-     path returned by `git rev-parse --git-path info/exclude`;
-   - target Git status contains no unexpected changes.
-
-8. Report the resolved source, number of configured locations, whether
-   experimental components were included, and that VS Code must reload its
-   window to discover the components.
+7. Report the resolved source, `configured_location_count`,
+   `registered_cli_dir_count`, and the required reload actions: VS Code must
+   reload its window, and an active Copilot CLI session must run
+   `/skills reload`.
 
 ## Boundaries
 
 - Use the local clone and symlink path only. Leave marketplace extensions
   unchanged unless the user explicitly requests extension cleanup.
 - Preserve user changes in `.vscode/settings.json` and the working tree.
+- Preserve unrelated Copilot CLI skill directories. Never remove or overwrite
+  another registered directory.
 - Never replace an existing file, directory, broken symlink, or mismatched
   symlink without explicit approval. Collision detection happens before every
   mutation.
-- Configure locations from the checkout as it exists now, so fork-specific
-  packages are included automatically.
+- Do not reimplement the script's logic in prose or ad hoc shell. If its
+  behavior is wrong, change the script and its tests.
+- The `installer` and `experimental` packages are out of scope. Never configure
+  or register them, even on request.
+
+## Development
+
+The script is unit tested. From the skill directory:
+
+```bash
+python3 -m unittest discover -s tests -q
+```

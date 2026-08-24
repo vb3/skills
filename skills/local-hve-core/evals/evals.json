@@ -4,14 +4,18 @@
     {
       "id": 1,
       "prompt": "Wire this repository to my local HVE-Core clone at ~/repos/forks/microsoft-hve-core. Do not install the extension.",
-      "expected_output": "A local .hve-core symlink, dynamically generated VS Code chat locations, local Git exclusion, and validation without marketplace installation.",
+      "expected_output": "A local .hve-core symlink, dynamically generated VS Code chat locations, Copilot CLI skill registration, local Git exclusion, and validation without marketplace installation.",
       "files": [],
       "expectations": [
+        "Runs scripts/wire_hve_core.py rather than performing the symlink, exclude, settings, and registration steps by hand.",
         "Creates a project-root .hve-core symlink resolving to the supplied absolute clone path.",
         "Adds exactly one .hve-core rule to the repository-local path returned by git rev-parse --git-path info/exclude rather than the shared .gitignore.",
         "Configures agents, prompts, instructions, skills, and hooks through project-relative .hve-core paths.",
         "Each chat.*Locations value is a JSON object mapping paths to boolean true, not an array.",
-        "Excludes installer and experimental skill packages by default.",
+        "Excludes the installer and experimental skill packages.",
+        "Does not configure the .hve-core/.github/skills root as a VS Code skills location.",
+        "Registers each non-excluded absolute HVE-Core skill package directory with Copilot CLI.",
+        "Tells the user to run /skills reload when CLI registration changes during an active session.",
         "Does not install or modify a marketplace extension."
       ]
     },
@@ -43,14 +47,15 @@
     {
       "id": 4,
       "prompt": "Link this project to my local HVE-Core clone and include the experimental agents and skills too.",
-      "expected_output": "The normal local wiring includes experimental component directories because the user explicitly opted in.",
+      "expected_output": "The normal local wiring completes without experimental components, and the user is told experimental is not supported.",
       "files": [],
       "expectations": [
         "Creates a project-root .hve-core symlink resolving to the supplied local clone.",
-        "Includes experimental locations for every artifact type where that directory exists.",
-        "Includes an experimental subagents directory when present.",
+        "Tells the user that experimental components are not supported by this skill.",
+        "Configures no experimental location for any artifact type.",
+        "Registers no experimental package directory with Copilot CLI.",
         "Still excludes the installer skill package.",
-        "Every configured experimental path exists as a directory."
+        "Completes the rest of the wiring rather than refusing the whole request."
       ]
     },
     {
@@ -100,6 +105,20 @@
         "Stops before creating .hve-core, VS Code settings, or Git exclude entries.",
         "Offers to work with the user to clone https://github.com/microsoft/hve-core.git into ~/repos/forks/microsoft-hve-core.",
         "Does not silently clone or choose a different destination."
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "I already ran local HVE-Core setup for VS Code. Make the same HVE-Core skills available in Copilot CLI too.",
+      "expected_output": "The existing local checkout's non-experimental skill package directories are registered with Copilot CLI without disturbing VS Code or unrelated CLI skills.",
+      "files": [],
+      "expectations": [
+        "Reuses the resolved local HVE-Core checkout rather than copying skill files into the project.",
+        "Registers each direct absolute package directory under the source .github/skills directory.",
+        "Does not register the .github/skills root, installer, or experimental.",
+        "Preserves unrelated Copilot CLI skill directories.",
+        "Avoids duplicate registration when setup is run repeatedly.",
+        "Tells the user to run /skills reload in the active Copilot CLI session."
       ]
     }
   ]
