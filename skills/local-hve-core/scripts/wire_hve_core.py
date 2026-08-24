@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -18,6 +17,7 @@ from typing import Any
 DEFAULT_SOURCE = "~/repos/forks/microsoft-hve-core"
 SYMLINK_NAME = ".hve-core"
 EXCLUDE_RULE = ".hve-core"
+PROJECT_SKILLS_SUBPATH = ".github/skills"
 COMPONENT_ROOTS = ("agents", "prompts", "instructions", "skills", "hooks")
 SKILL_ONLY_EXCLUDES = ("installer",)
 EXPERIMENTAL = "experimental"
@@ -160,15 +160,76 @@ def compute_locations(source: Path) -> dict[str, dict[str, bool]]:
     return locations
 
 
-def expected_cli_skill_dirs(source: Path) -> list[str]:
-    dirs = []
+def expected_project_skill_links(source: Path) -> dict[str, str]:
+    """Map each linkable skill package to its symlink target, relative to the link."""
+    links: dict[str, str] = {}
     for directory in subdirectories(source / ".github" / "skills"):
         if directory.name in SKILL_ONLY_EXCLUDES:
             continue
         if directory.name == EXPERIMENTAL:
             continue
-        dirs.append(str(directory))
-    return dirs
+        links[directory.name] = f"../../{SYMLINK_NAME}/{PROJECT_SKILLS_SUBPATH}/{directory.name}"
+    return links
+
+
+def classify_project_skill_links(project_root: Path, expected: dict[str, str]) -> dict[str, Any]:
+    """Classify each expected package link as present, missing, or colliding."""
+    root = project_root / PROJECT_SKILLS_SUBPATH
+    present: list[str] = []
+    missing: list[str] = []
+    collisions: list[dict[str, str]] = []
+    for name, target in expected.items():
+        path = root / name
+        if not path.is_symlink() and not path.exists():
+            missing.append(name)
+            continue
+        if not path.is_symlink():
+            collisions.append(
+                {"name": name, "state": "directory" if path.is_dir() else "file"}
+            )
+            continue
+        actual = os.readlink(path)
+        if actual == target and path.exists():
+            present.append(name)
+        else:
+            collisions.append(
+                {
+                    "name": name,
+                    "state": "broken-symlink" if not path.exists() else "symlink-mismatch",
+                    "resolved": actual,
+                }
+            )
+    return {
+        "path": str(root),
+        "expected": expected,
+        "present": present,
+        "missing": missing,
+        "collisions": collisions,
+    }
+
+
+def guard_project_skill_links(info: dict[str, Any]) -> None:
+    if not info["collisions"]:
+        return
+    detail = ", ".join(
+        f"{PROJECT_SKILLS_SUBPATH}/{item['name']} is a {item['state']}"
+        for item in info["collisions"]
+    )
+    raise SetupError(
+        f"{detail}. Stop and ask the user how to handle the collision.",
+        EXIT_COLLISION,
+    )
+
+
+def create_project_skill_links(project_root: Path, info: dict[str, Any]) -> list[str]:
+    root = project_root / PROJECT_SKILLS_SUBPATH
+    if info["missing"]:
+        root.mkdir(parents=True, exist_ok=True)
+    actions = []
+    for name in info["missing"]:
+        (root / name).symlink_to(info["expected"][name])
+        actions.append(f"skills: linked {PROJECT_SKILLS_SUBPATH}/{name}")
+    return actions
 
 
 def load_json_tolerant(path: Path) -> Any:
@@ -179,6 +240,7 @@ def load_json_tolerant(path: Path) -> Any:
 
 
 def read_registered_dirs(settings_path: Path) -> list[str]:
+    """Legacy Copilot CLI registrations this skill used to create."""
     if not settings_path.is_file():
         return []
     try:
@@ -187,6 +249,16 @@ def read_registered_dirs(settings_path: Path) -> list[str]:
         return []
     value = data.get("skillDirectories", []) if isinstance(data, dict) else []
     return [str(item) for item in value] if isinstance(value, list) else []
+
+
+def stale_cli_registrations(settings_path: Path, source: Path) -> list[str]:
+    """Global registrations pointing into the clone, left by older runs."""
+    skills_root = source / ".github" / "skills"
+    return [
+        directory
+        for directory in read_registered_dirs(settings_path)
+        if Path(directory) == skills_root or Path(directory).parent == skills_root
+    ]
 
 
 def inspect_vscode_settings(
@@ -257,44 +329,29 @@ def exclude_path(project_root: Path) -> Path:
     return candidate
 
 
-def exclude_rule_present(path: Path) -> bool:
+def expected_exclude_rules(expected_links: dict[str, str]) -> list[str]:
+    return [EXCLUDE_RULE] + [
+        f"/{PROJECT_SKILLS_SUBPATH}/{name}" for name in expected_links
+    ]
+
+
+def present_exclude_rules(path: Path) -> set[str]:
     if not path.is_file():
-        return False
-    lines = path.read_text(encoding="utf-8").splitlines()
-    return any(line.strip() == EXCLUDE_RULE for line in lines)
+        return set()
+    return {line.strip() for line in path.read_text(encoding="utf-8").splitlines()}
 
 
-def append_exclude_rule(path: Path) -> list[str]:
-    if exclude_rule_present(path):
+def append_exclude_rules(path: Path, rules: Sequence[str]) -> list[str]:
+    present = present_exclude_rules(path)
+    pending = [rule for rule in rules if rule not in present]
+    if not pending:
         return []
     path.parent.mkdir(parents=True, exist_ok=True)
     existing = path.read_text(encoding="utf-8") if path.is_file() else ""
     prefix = "" if existing == "" or existing.endswith("\n") else "\n"
     with path.open("a", encoding="utf-8") as handle:
-        handle.write(f"{prefix}{EXCLUDE_RULE}\n")
-    return [f"exclude: appended {EXCLUDE_RULE} to {path}"]
-
-
-def register_cli_dirs(missing: Sequence[str], copilot_bin: str) -> tuple[list[str], list[str]]:
-    if not missing:
-        return [], []
-    resolved = shutil.which(copilot_bin)
-    if resolved is None:
-        return [], [f"{copilot_bin} not found on PATH; skipped CLI skill registration"]
-    actions: list[str] = []
-    failures: list[str] = []
-    for directory in missing:
-        completed = subprocess.run(
-            [resolved, "skill", "add", directory],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if completed.returncode == 0:
-            actions.append(f"cli: registered {directory}")
-        else:
-            failures.append(f"cli: failed to register {directory}: {completed.stderr.strip()}")
-    return actions, failures
+        handle.write(prefix + "".join(f"{rule}\n" for rule in pending))
+    return [f"exclude: appended {rule} to {path}" for rule in pending]
 
 
 def build_state(args: argparse.Namespace) -> dict[str, Any]:
@@ -303,35 +360,39 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
     present_roots = check_source(source)
     symlink = classify_symlink(project_root, source)
     locations = compute_locations(source)
-    expected = expected_cli_skill_dirs(source)
-    registered = read_registered_dirs(Path(args.copilot_settings).expanduser())
-    exclude = exclude_path(project_root)
+    expected_links = expected_project_skill_links(source)
+    skill_links = classify_project_skill_links(project_root, expected_links)
+    rules = expected_exclude_rules(expected_links)
+    present_rules = present_exclude_rules(exclude := exclude_path(project_root))
+    settings_path = Path(args.copilot_settings).expanduser()
     return {
         "project_root": str(project_root),
         "source": str(source),
         "component_roots_present": present_roots,
         "symlink": symlink,
         "vscode_locations": locations,
-        "git_exclude": {"path": str(exclude), "rule_present": exclude_rule_present(exclude)},
-        "cli_skill_dirs": {
-            "expected": expected,
-            "registered": registered,
-            "missing": [d for d in expected if d not in registered],
+        "git_exclude": {
+            "path": str(exclude),
+            "rules": rules,
+            "missing": [rule for rule in rules if rule not in present_rules],
         },
+        "project_skill_links": skill_links,
+        "stale_cli_registrations": stale_cli_registrations(settings_path, source),
     }
 
 
 def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     state = build_state(args)
     guard_symlink(state["symlink"])
+    guard_project_skill_links(state["project_skill_links"])
     settings = inspect_vscode_settings(Path(state["project_root"]), state["vscode_locations"])
     state["vscode_settings"] = settings
     state["mode"] = "check"
     pending = (
         state["symlink"]["state"] == "absent"
-        or not state["git_exclude"]["rule_present"]
+        or bool(state["git_exclude"]["missing"])
         or bool(settings.get("missing_entries"))
-        or bool(state["cli_skill_dirs"]["missing"])
+        or bool(state["project_skill_links"]["missing"])
     )
     state["status"] = "pending" if pending else "already-applied"
     return state, EXIT_OK
@@ -340,6 +401,7 @@ def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 def command_apply(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     state = build_state(args)
     guard_symlink(state["symlink"])
+    guard_project_skill_links(state["project_skill_links"])
     project_root = Path(state["project_root"])
     source = Path(state["source"])
     actions: list[str] = []
@@ -349,18 +411,20 @@ def command_apply(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         actions.append(f"symlink: created {SYMLINK_NAME} -> {source}")
         state["symlink"] = classify_symlink(project_root, source)
 
-    actions += append_exclude_rule(Path(state["git_exclude"]["path"]))
-    state["git_exclude"]["rule_present"] = True
-
-    cli_actions, cli_failures = register_cli_dirs(
-        state["cli_skill_dirs"]["missing"], args.copilot_bin
+    actions += create_project_skill_links(project_root, state["project_skill_links"])
+    state["project_skill_links"] = classify_project_skill_links(
+        project_root, state["project_skill_links"]["expected"]
     )
-    actions += cli_actions
+
+    actions += append_exclude_rules(
+        Path(state["git_exclude"]["path"]), state["git_exclude"]["rules"]
+    )
+    state["git_exclude"]["missing"] = []
 
     settings = inspect_vscode_settings(project_root, state["vscode_locations"])
     state["vscode_settings"] = settings
     state["mode"] = "apply"
-    state["failures"] = cli_failures
+    state["failures"] = []
 
     if settings["state"] == "unparseable":
         state["actions"] = actions
@@ -391,22 +455,22 @@ def forbidden_location(setting: str, location: str) -> list[str]:
     return []
 
 
-def check_ignore_attribution(project_root: Path, expected: Path) -> list[str]:
+def check_ignore_attribution(project_root: Path, expected: Path, target: str) -> list[str]:
     completed = subprocess.run(
-        ["git", "check-ignore", "-v", "--no-index", SYMLINK_NAME],
+        ["git", "check-ignore", "-v", "--no-index", target],
         cwd=str(project_root),
         capture_output=True,
         text=True,
         check=False,
     )
     if completed.returncode != 0:
-        return [f"git check-ignore did not match {SYMLINK_NAME}"]
+        return [f"git check-ignore did not match {target}"]
     source_file = completed.stdout.split(":", 1)[0].strip()
     resolved = Path(source_file)
     if not resolved.is_absolute():
         resolved = (project_root / resolved).resolve()
     if resolved != expected:
-        return [f"{SYMLINK_NAME} rule attributed to {resolved}, expected {expected}"]
+        return [f"{target} rule attributed to {resolved}, expected {expected}"]
     return []
 
 
@@ -443,24 +507,32 @@ def verify_vscode(state: dict[str, Any]) -> tuple[list[str], int]:
     return failures, configured
 
 
-def verify_cli(state: dict[str, Any]) -> list[str]:
-    source = Path(state["source"])
-    skills_root = source / ".github" / "skills"
+def verify_project_skills(state: dict[str, Any]) -> tuple[list[str], int]:
+    project_root = Path(state["project_root"])
+    info = state["project_skill_links"]
     failures = [
-        f"CLI skill directory not registered: {d}" for d in state["cli_skill_dirs"]["missing"]
+        f"skill package not linked: {PROJECT_SKILLS_SUBPATH}/{name}" for name in info["missing"]
     ]
-    for directory in state["cli_skill_dirs"]["registered"]:
-        candidate = Path(directory)
-        if candidate == skills_root:
-            failures.append(f"the skills root is registered with the CLI: {directory}")
+    failures += [
+        f"{PROJECT_SKILLS_SUBPATH}/{item['name']} is a {item['state']}"
+        for item in info["collisions"]
+    ]
+
+    prefix = f"../../{SYMLINK_NAME}/"
+    root = project_root / PROJECT_SKILLS_SUBPATH
+    for entry in sorted(root.iterdir(), key=lambda p: p.name) if root.is_dir() else []:
+        if not entry.is_symlink():
             continue
-        if candidate.parent != skills_root:
+        target = os.readlink(entry)
+        if not target.startswith(prefix):
             continue
-        if candidate.name in SKILL_ONLY_EXCLUDES:
-            failures.append(f"excluded package is registered with the CLI: {directory}")
-        elif candidate.name == EXPERIMENTAL:
-            failures.append(f"experimental is registered with the CLI: {directory}")
-    return failures
+        if EXPERIMENTAL in target.split("/"):
+            failures.append(f"an experimental package is linked: {entry.name}")
+        elif entry.name in SKILL_ONLY_EXCLUDES:
+            failures.append(f"an excluded package is linked: {entry.name}")
+        if not entry.exists():
+            failures.append(f"linked skill package is broken: {entry.name}")
+    return failures, len(info["present"])
 
 
 def command_verify(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
@@ -475,18 +547,29 @@ def command_verify(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 
     vscode_failures, configured = verify_vscode(state)
     failures += vscode_failures
-    failures += verify_cli(state)
+    skill_failures, linked = verify_project_skills(state)
+    failures += skill_failures
+    failures += [
+        f"stale global CLI registration, run: copilot skill remove {directory}"
+        for directory in state["stale_cli_registrations"]
+    ]
 
-    if not state["git_exclude"]["rule_present"]:
-        failures.append(f"{EXCLUDE_RULE} rule absent from {state['git_exclude']['path']}")
-    else:
+    missing_rules = state["git_exclude"]["missing"]
+    failures += [
+        f"{rule} rule absent from {state['git_exclude']['path']}" for rule in missing_rules
+    ]
+    for rule in state["git_exclude"]["rules"]:
+        if rule in missing_rules:
+            continue
         failures += check_ignore_attribution(
-            Path(state["project_root"]), Path(state["git_exclude"]["path"])
+            Path(state["project_root"]),
+            Path(state["git_exclude"]["path"]),
+            rule.lstrip("/"),
         )
 
     state["mode"] = "verify"
     state["configured_location_count"] = configured
-    state["registered_cli_dir_count"] = len(state["cli_skill_dirs"]["expected"])
+    state["linked_skill_package_count"] = linked
     state["failures"] = failures
     state["status"] = "verified" if not failures else "verification-failed"
     return state, EXIT_OK if not failures else EXIT_VERIFY_FAILED
@@ -502,7 +585,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--source", default=None, help=f"HVE-Core clone path (default: {DEFAULT_SOURCE})"
     )
-    parser.add_argument("--copilot-bin", default="copilot")
     parser.add_argument("--copilot-settings", default="~/.copilot/settings.json")
     return parser
 

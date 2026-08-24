@@ -73,8 +73,6 @@ class Harness(unittest.TestCase):
             str(self.source),
             "--copilot-settings",
             str(self.copilot_settings),
-            "--copilot-bin",
-            "definitely-not-a-real-binary",
             *extra,
         ]
         import io
@@ -130,27 +128,28 @@ class LocationComputationTests(Harness):
             with self.assertRaises(SystemExit):
                 self.run_mode("check", "--include-experimental")
 
-    def test_experimental_is_excluded_from_cli_dirs_and_locations(self) -> None:
+    def test_experimental_is_excluded_from_links_and_locations(self) -> None:
         _, state = self.run_mode("check")
         skills = state["vscode_locations"]["chat.agentSkillsLocations"]
         agents = state["vscode_locations"]["chat.agentFilesLocations"]
         self.assertNotIn(".hve-core/.github/skills/experimental", skills)
         self.assertNotIn(".hve-core/.github/agents/experimental", agents)
         self.assertNotIn(".hve-core/.github/agents/experimental/subagents", agents)
+        self.assertNotIn("experimental", state["project_skill_links"]["expected"])
 
-    def test_cli_dirs_are_absolute_source_packages(self) -> None:
+    def test_skill_links_target_packages_relatively_through_the_symlink(self) -> None:
         _, state = self.run_mode("check")
-        expected = state["cli_skill_dirs"]["expected"]
-        self.assertIn(str(self.source / ".github" / "skills" / "rpi"), expected)
-        self.assertTrue(all(Path(d).is_absolute() for d in expected))
-        self.assertNotIn(str(self.source / ".github" / "skills"), expected)
-        self.assertNotIn(str(self.source / ".github" / "skills" / "installer"), expected)
-        self.assertNotIn(str(self.source / ".github" / "skills" / "experimental"), expected)
+        expected = state["project_skill_links"]["expected"]
+        self.assertEqual(expected["rpi"], "../../.hve-core/.github/skills/rpi")
+        self.assertTrue(all(t.startswith("../../.hve-core/") for t in expected.values()))
+        self.assertNotIn("installer", expected)
+        self.assertNotIn("experimental", expected)
 
 
 class CollisionTests(Harness):
     def assert_no_mutation(self) -> None:
         self.assertFalse((self.project / ".vscode").exists())
+        self.assertFalse((self.project / ".github" / "skills").exists())
         exclude = self.project / ".git" / "info" / "exclude"
         text = exclude.read_text(encoding="utf-8") if exclude.is_file() else ""
         self.assertNotIn(".hve-core", text)
@@ -241,7 +240,8 @@ class ApplyTests(Harness):
         exclude.write_text("*.log\nbuild", encoding="utf-8")
         self.run_mode("apply")
         lines = exclude.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(lines, ["*.log", "build", ".hve-core"])
+        self.assertEqual(lines[:3], ["*.log", "build", ".hve-core"])
+        self.assertEqual(lines[3:], ["/.github/skills/hve-core", "/.github/skills/rpi"])
 
     def test_apply_preserves_unrelated_and_existing_settings(self) -> None:
         vscode = self.project / ".vscode"
@@ -318,19 +318,66 @@ class ApplyTests(Harness):
         self.assertEqual(state["symlink"]["state"], "reuse")
 
 
-class CliRegistrationTests(Harness):
-    def test_missing_excludes_already_registered_directories(self) -> None:
-        rpi = str(self.source / ".github" / "skills" / "rpi")
-        self.register(rpi, "/unrelated/other-skills")
-        _, state = self.run_mode("check")
-        self.assertNotIn(rpi, state["cli_skill_dirs"]["missing"])
-        self.assertIn(str(self.source / ".github" / "skills" / "hve-core"), state["cli_skill_dirs"]["missing"])
+class ProjectSkillLinkTests(Harness):
+    def links_dir(self) -> Path:
+        return self.project / ".github" / "skills"
 
-    def test_unrelated_registered_directories_are_preserved(self) -> None:
-        self.register("/unrelated/other-skills")
+    def test_apply_creates_one_relative_symlink_per_package(self) -> None:
         self.run_mode("apply")
-        registered = json.loads(self.copilot_settings.read_text(encoding="utf-8"))
-        self.assertIn("/unrelated/other-skills", registered["skillDirectories"])
+        rpi = self.links_dir() / "rpi"
+        self.assertTrue(rpi.is_symlink())
+        self.assertEqual(os.readlink(rpi), "../../.hve-core/.github/skills/rpi")
+        self.assertTrue(rpi.is_dir(), "link must resolve through the .hve-core symlink")
+        self.assertFalse((self.links_dir() / "installer").exists())
+        self.assertFalse((self.links_dir() / "experimental").exists())
+
+    def test_links_are_excluded_from_git(self) -> None:
+        self.run_mode("apply")
+        exclude = self.project / ".git" / "info" / "exclude"
+        lines = [line.strip() for line in exclude.read_text(encoding="utf-8").splitlines()]
+        self.assertIn("/.github/skills/rpi", lines)
+        self.assertEqual(lines.count("/.github/skills/rpi"), 1)
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=self.project,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertNotIn(".github/skills", status.stdout)
+
+    def test_existing_real_package_directory_blocks_apply(self) -> None:
+        own = self.links_dir() / "rpi"
+        own.mkdir(parents=True)
+        (own / "SKILL.md").write_text("mine", encoding="utf-8")
+        code, state = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_COLLISION)
+        self.assertIn(".github/skills/rpi is a directory", state["error"])
+        self.assertEqual((own / "SKILL.md").read_text(encoding="utf-8"), "mine")
+
+    def test_unrelated_project_skills_are_left_alone(self) -> None:
+        mine = self.links_dir() / "my-own-skill"
+        mine.mkdir(parents=True)
+        (mine / "SKILL.md").write_text("mine", encoding="utf-8")
+        code, _ = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertTrue((mine / "SKILL.md").is_file())
+        exclude = self.project / ".git" / "info" / "exclude"
+        self.assertNotIn(
+            "/.github/skills/my-own-skill",
+            exclude.read_text(encoding="utf-8").splitlines(),
+        )
+
+    def test_stale_global_registration_is_reported_not_created(self) -> None:
+        skills = self.source / ".github" / "skills"
+        self.register(str(skills / "rpi"), "/unrelated/other-skills")
+        _, state = self.run_mode("check")
+        self.assertEqual(state["stale_cli_registrations"], [str(skills / "rpi")])
+
+    def test_apply_never_writes_copilot_settings(self) -> None:
+        before = self.copilot_settings.read_bytes()
+        self.run_mode("apply")
+        self.assertEqual(self.copilot_settings.read_bytes(), before)
 
     def test_tolerates_comment_header_in_copilot_settings(self) -> None:
         rpi = str(self.source / ".github" / "skills" / "rpi")
@@ -339,21 +386,17 @@ class CliRegistrationTests(Harness):
             encoding="utf-8",
         )
         _, state = self.run_mode("check")
-        self.assertIn(rpi, state["cli_skill_dirs"]["registered"])
+        self.assertIn(rpi, state["stale_cli_registrations"])
 
 
 class VerifyTests(Harness):
-    def register_all(self) -> None:
-        _, state = self.run_mode("check")
-        self.register(*state["cli_skill_dirs"]["expected"])
-
     def test_verify_passes_after_apply(self) -> None:
         self.run_mode("apply")
-        self.register_all()
         code, state = self.run_mode("verify")
         self.assertEqual(state["failures"], [])
         self.assertEqual(code, wire.EXIT_OK)
         self.assertGreater(state["configured_location_count"], 0)
+        self.assertGreater(state["linked_skill_package_count"], 0)
 
     def test_verify_fails_when_symlink_absent(self) -> None:
         code, state = self.run_mode("verify")
@@ -362,7 +405,6 @@ class VerifyTests(Harness):
 
     def test_verify_rejects_array_shaped_locations(self) -> None:
         self.run_mode("apply")
-        self.register_all()
         path = self.project / ".vscode" / "settings.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         data["chat.agentFilesLocations"] = [{"path": "x", "enabled": True}]
@@ -373,7 +415,6 @@ class VerifyTests(Harness):
 
     def test_verify_rejects_skills_root_and_excluded_packages(self) -> None:
         self.run_mode("apply")
-        self.register_all()
         path = self.project / ".vscode" / "settings.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         data["chat.agentSkillsLocations"][".hve-core/.github/skills"] = True
@@ -386,24 +427,33 @@ class VerifyTests(Harness):
         self.assertIn("excluded package", joined)
         self.assertIn("experimental", joined)
 
-    def test_verify_rejects_registered_installer_or_experimental(self) -> None:
+    def test_verify_reports_stale_global_registrations_with_remedy(self) -> None:
         self.run_mode("apply")
         skills = self.source / ".github" / "skills"
-        self.register(str(skills / "rpi"), str(skills / "installer"), str(skills))
-        _, state = self.run_mode("verify")
-        joined = " ".join(state["failures"])
-        self.assertIn("excluded package is registered", joined)
-        self.assertIn("skills root is registered", joined)
-
-    def test_verify_reports_unregistered_cli_directory(self) -> None:
-        self.run_mode("apply")
+        self.register(str(skills / "rpi"), "/unrelated/other-skills")
         code, state = self.run_mode("verify")
         self.assertEqual(code, wire.EXIT_VERIFY_FAILED)
-        self.assertTrue(any("not registered" in f for f in state["failures"]))
+        joined = " ".join(state["failures"])
+        self.assertIn("copilot skill remove", joined)
+        self.assertIn(str(skills / "rpi"), joined)
+        self.assertNotIn("/unrelated/other-skills", joined)
+
+    def test_verify_reports_unlinked_package(self) -> None:
+        self.run_mode("apply")
+        (self.project / ".github" / "skills" / "rpi").unlink()
+        code, state = self.run_mode("verify")
+        self.assertEqual(code, wire.EXIT_VERIFY_FAILED)
+        self.assertTrue(any("not linked" in f for f in state["failures"]))
+
+    def test_verify_reports_experimental_link(self) -> None:
+        self.run_mode("apply")
+        link = self.project / ".github" / "skills" / "experimental"
+        link.symlink_to("../../.hve-core/.github/skills/experimental")
+        _, state = self.run_mode("verify")
+        self.assertTrue(any("experimental package is linked" in f for f in state["failures"]))
 
     def test_verify_detects_stale_location_pointing_at_missing_directory(self) -> None:
         self.run_mode("apply")
-        self.register_all()
         path = self.project / ".vscode" / "settings.json"
         data = json.loads(path.read_text(encoding="utf-8"))
         data["chat.promptFilesLocations"][".hve-core/.github/prompts/gone"] = True
@@ -440,8 +490,6 @@ class WorktreeTests(Harness):
                     str(self.source),
                     "--copilot-settings",
                     str(self.copilot_settings),
-                    "--copilot-bin",
-                    "definitely-not-a-real-binary",
                 ]
             )
         state = json.loads(buffer.getvalue())
