@@ -1,12 +1,13 @@
 # Evidence
 
-**Compiled 2026-08-04.** Each claim is tagged by confidence:
+**Compiled 2026-08-04. Speed and latency sections added 2026-08-24.** Each
+claim is tagged by confidence:
 
 - **[V]** Vendor-documented.
 - **[B]** Third-party benchmark or measurement.
 - **[A]** Anecdotal practitioner report.
 
-## Terra is off the joint frontier
+## Terra is off the cost frontier, and the speed axis does not rescue it
 
 This is the single finding the routing table leans on hardest, and it is the one
 most likely to invert on a price change.
@@ -14,9 +15,10 @@ most likely to invert on a price change.
 **State it precisely.** Terra is *not* strictly dominated by either sibling on
 its own: it scores higher than Luna (55 vs 51) and costs less than Sol. The
 claim is that the frontier traced jointly by Sol and Luna *across effort levels*
-lies outside Terra, so for a given Terra configuration there is usually a Luna or
-Sol configuration that is better on one axis without being worse on the other.
-Saying "Terra is dominated on both axes" is wrong and should not be repeated.
+lies outside Terra **on the cost axis**, so for a given Terra configuration
+there is usually a Luna or Sol configuration that is better on one axis without
+being worse on the other. Saying "Terra is dominated on both axes" is wrong and
+should not be repeated.
 
 **[B]** Artificial Analysis: "Luna and Sol are always on the Pareto frontier
 ahead of Terra. This means that for any Terra effort level, there is a Luna or
@@ -39,8 +41,8 @@ Sources:
 
 Luna delivers roughly 86% of Sol's score at roughly 20% of the cost. Terra sits
 between them without owning either end, which is the whole of the argument
-against it. Note that Terra beats Luna on score here; the case against Terra is
-positional, not that it is bad.
+against it on cost. Note that Terra beats Luna on score here; the case against
+Terra is positional, not that it is bad.
 
 **[V]** The dominance is a consequence of the 2026-07-30 price cut, which left
 Sol unchanged, cut Terra ~20%, and cut Luna ~80%. Before that date, Terra was a
@@ -48,9 +50,67 @@ defensible default and most published routing advice recommends it. Treat any
 routing guidance written before 2026-07-30 as stale on this specific point.
 Source: [OpenAI price-performance post](https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/).
 
-**Caveat.** The Pareto claim is measured on aggregate benchmark indices, not on
-any specific workload. If a measured eval on your own task shows Terra winning,
-believe the eval over this file.
+### Does the speed axis change the conclusion? No.
+
+This was the obvious objection to the barbell, and it was investigated
+specifically. It does not hold up.
+
+**[B]** Measured output speed, at a fixed effort level:
+
+| Model | Output TPS | Intelligence |
+|---|---|---|
+| Luna | 140-149 | 51-52 |
+| Terra | 105-121 | 55-57 |
+| Sol | 72-110 | 59-61 |
+
+Read naively, this puts all three on a speed-versus-intelligence frontier, since
+none dominates another on both. **That reading is wrong, because it holds effort
+fixed while this skill treats effort as a free variable.**
+
+End-to-end generation time is roughly `tokens / rate`. Effort multiplies the
+token count several-fold; the model sets the rate. So exactly as with cost,
+varying effort lets the endpoints enclose the middle. Using the midpoint rates
+above and the effort multipliers from the model map, seconds per 1,000-token
+medium-effort baseline:
+
+| | `low` | `medium` | `high` | `xhigh` | `max` |
+|---|---|---|---|---|---|
+| **Luna** | 2.4 | 6.9 | 12.1 | 17.2 | 27.6 |
+| **Terra** | 3.1 | 8.8 | 15.5 | 22.1 | 35.4 |
+| **Sol** | 3.8 | 11.0 | 19.2 | 27.5 | 44.0 |
+
+Now apply the one published quality head-to-head between these two models, from
+the section below: **Sol at `medium` beats Terra at `xhigh`** on both the
+Intelligence Index and the Coding Agent Index. Sol `medium` takes ~11.0 s
+against Terra `xhigh` at ~22.1 s. Sol is simultaneously faster *and* better, so
+Terra `xhigh` is dominated on both axes at once. The same enclosure argument
+that removes Terra from the cost frontier removes it from the latency frontier.
+
+**Conclusion: the barbell survives on both frontiers, for the same structural
+reason.** The latency answer inside the OpenAI family is Sol at lower effort
+when judgment is needed and Luna when it is not. It is not Terra.
+
+**Where the argument genuinely runs out.** At the `low` end the three models are
+within about 1.4 seconds of each other, and no published data establishes
+quality at matched low effort, so nothing here proves Terra is dominated at
+`low`. The claim is that Terra has no *demonstrated* latency slot, not that one
+is impossible. A measured eval on a specific workload still outranks this file.
+
+Note also that time to first token does not separate these three models: all are
+reported under a second and within ~0.1 s of each other. TTFT differences matter
+between *vendors*, not within the GPT-5.6 family.
+
+**Conflict flagged.** Two independent research passes over the same source
+returned different TPS figures: 140/121/72 and 149/105-120/90-110 for
+Luna/Terra/Sol. The ordering and the rough 2x spread between Luna and Sol are
+consistent across both; the individual numbers are not. Do not quote a specific
+TPS figure. The conclusion above depends only on the ordering and on the
+published Sol-medium-beats-Terra-xhigh result, both of which are robust to the
+disagreement.
+
+**Caveat.** Both Pareto claims are measured on aggregate benchmark indices, not
+on any specific workload. If a measured eval on your own task shows Terra
+winning, believe the eval over this file.
 
 ## Frontier tier at medium beats balanced tier at xhigh
 
@@ -140,6 +200,58 @@ Sources: [EdenAI](https://www.edenai.co/post/claude-sonnet-5-vs-gpt-5-6-sol-vs-g
 **Conflict flagged.** Third-party sources disagree on Sol's exact SWE-Bench Pro
 figure, and it is not vendor-confirmed. Do not quote a specific number.
 
+## Latency mechanics
+
+**[V]** OpenAI's latency guidance gives the load-bearing asymmetry: "cutting
+50% of your output tokens may cut ~50% of your latency", while "cutting 50% of
+your prompt may only result in a 1-5% latency improvement". Reasoning tokens
+are generated at the output rate, so effort is a latency control and prompt
+size essentially is not.
+Source: [latency optimization guide](https://developers.openai.com/api/docs/guides/latency-optimization).
+
+**[V]** OpenAI positions the effort ladder explicitly against latency: `none`
+for "latency-critical tasks that do not benefit from any reasoning" such as
+voice and classification, `low` for "efficient reasoning with a modest latency
+increase", `medium` as the "well-balanced point on the pareto curve of latency,
+performance and cost", and `high` and above for cases where "quality and
+intelligence matter more than latency".
+Source: [reasoning guide](https://developers.openai.com/api/docs/guides/reasoning).
+
+**[V]** Anthropic's production multi-agent system reports that parallelizing
+subagents and tool calls "cut research time by up to 90%" on complex queries.
+This is the largest single latency win documented anywhere in this file, and it
+is an orchestration change rather than a model change.
+Source: [Anthropic multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system).
+
+**[V]** From the same source, an important limit on fan-out: token usage alone
+explained 80% of performance variance on their evaluation, and spawning large
+numbers of subagents for simple queries was a recorded failure mode. Fan-out
+buys wall clock only to the extent the work is genuinely independent.
+
+**[B]** Human response-time thresholds, unchanged since Miller (1968) and Card
+et al. (1991): 0.1 s feels instantaneous, 1 s is the limit for uninterrupted
+flow of thought, 10 s is the limit for holding attention, after which users
+reorient on return.
+Source: [Nielsen](https://www.nngroup.com/articles/response-times-3-important-limits/).
+
+**[B]** Speculative decoding yields a measured 2x to 3x latency improvement
+with identical outputs, implemented provider-side and therefore already
+reflected in published TPS figures rather than available as a lever.
+Source: Leviathan et al., [arXiv:2211.17192](https://arxiv.org/abs/2211.17192).
+
+**Derived, not measured.** The claim that a small model at high effort can
+finish later in wall clock than a large model at low effort follows from two
+verified facts (reasoning tokens are clocked at the output rate; effort
+multiplies reasoning tokens several-fold) but **no published experiment
+measuring this crossover was found**. It is stated in the skill as a mechanism,
+not as a benchmark result, and should not be quoted as one.
+
+**Not found.** No published study measures the latency at which a developer
+abandons or rejects an AI coding suggestion. The widely repeated "300 ms for
+inline completions" figure is practitioner lore. The GitHub Copilot
+productivity study (Peng et al., [arXiv:2302.06590](https://arxiv.org/abs/2302.06590))
+measures task completion time, not latency sensitivity.
+
 ## Long-session drift
 
 **[A]** Widely reported across independent users on the OpenAI developer forum,
@@ -220,7 +332,18 @@ explicit verification gate as the precondition.
 - A `gpt-5.6-chat-latest` alias was referenced in earlier discussion but not
   found in official API documentation. The confirmed alias is `gpt-5.6` to Sol.
 - Effort token and latency multipliers are community measurements, not vendor
-  figures.
+  figures. A targeted search for a primary source found only qualitative
+  language in the OpenAI docs.
+- Output TPS figures for Sol, Terra, and Luna differ between research passes;
+  only the ordering is reliable. See the conflict note above.
+- All TTFT figures in the model map are secondary estimates. Artificial
+  Analysis renders its TTFT provider pages in JavaScript and they could not be
+  fetched directly.
+- Gemini 3.7 Flash TTFT is reported as both ~0.4 s and ~10-12 s by different
+  sources. The likely reconciliation is first *thinking* token versus first
+  *answer* token, but this is inference, not confirmation.
+- Grok 4.5 and 4.6 output TPS is contradicted across sources by two orders of
+  magnitude; treat as a data gap rather than an estimate.
 - Non-OpenAI pricing in the model map is approximate and moves frequently.
 - Claude model naming in benchmark write-ups is inconsistent across sources for
   the current Opus-class flagship. Verify the exact model ID before quoting a

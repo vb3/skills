@@ -69,14 +69,14 @@
     {
       "id": 6,
       "prompt": "My interactive coding loop is taking 40 seconds per turn on Sol high and it's breaking my flow. I don't want to lose answer quality. What do I change?",
-      "expected_output": "Drop effort one step before dropping tier, because effort dominates latency and tier carries the judgment.",
+      "expected_output": "Work the levers in order. With no quality-preserving speed lever available, either round trips and output length absorb the 40 seconds or the work does not belong in an interactive turn at that quality bar.",
       "files": [],
       "expectations": [
-        "Recommends lowering reasoning effort before changing model.",
-        "Explains that effort is the dominant latency lever while tier carries judgment quality.",
-        "Suggests Sol at medium as the first move.",
-        "Does not immediately recommend dropping to the efficient tier.",
-        "May mention Sol fast mode as a latency option that trades price for speed."
+        "Identifies 40 seconds as far past the roughly 10 second interactive ceiling, so the task is misrouted for its latency class.",
+        "Checks whether serial tool round trips or output length dominate the turn before recommending a model or effort change.",
+        "States that the interactive class caps effort at medium, so Sol at high is misrouted for this loop whatever the routing table would otherwise start at.",
+        "Does not offer fast mode or any other paid speed tier, since none is reachable from this harness.",
+        "States that if cutting round trips and caching do not close the gap, the remaining honest options are lowering effort or moving the work off the interactive path."
       ]
     },
     {
@@ -193,6 +193,71 @@
         "Uses the exact runSubagent display name GPT-5.6 Luna (copilot), not the API or CLI ID gpt-5.6-luna.",
         "States that the current runSubagent schema does not expose a reasoning-effort field, so the selected effort is not host-enforced.",
         "Does not claim that adding effort wording to the worker prompt is equivalent to a harness reasoning-effort control."
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "I'm building an interactive code-explanation panel. Luna's answers aren't good enough, it misses nuance that users then ask follow-ups about, but Sol at high effort is slow enough that people give up waiting. Cost genuinely isn't my constraint here, I have budget. Should I put Terra in the middle?",
+      "expected_output": "No. Lower Sol's effort instead. Latency is roughly tokens divided by rate, and effort moves the token count, so Sol at a lower effort is both faster and better than Terra.",
+      "files": [],
+      "expectations": [
+        "Declines to route to gpt-5.6-terra.",
+        "Explains that wall clock is roughly output tokens divided by token rate, so lowering Sol's effort buys back speed the same way lowering it buys back cost.",
+        "Cites that Sol at medium is both faster and better than Terra at xhigh, so the balanced tier is enclosed on latency as well as on cost.",
+        "Recommends Sol at medium or below, which the interactive class requires anyway.",
+        "Attacks time to first token with prompt caching on the stable prefix rather than looking for a paid speed tier."
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "For our interactive assistant I want to switch from Luna to Gemini 3.7 Flash. It benchmarks at around 340 tokens per second, more than double Luna. That should roughly halve our response times, right?",
+      "expected_output": "No. Tokens per second is not latency, and Flash's time to first token is reported as high enough that Luna wins decisively on short interactive turns.",
+      "files": [],
+      "expectations": [
+        "Rejects the premise that higher tokens per second implies lower response time.",
+        "States that time to first token dominates perceived latency for short turns, and that Gemini Flash's reported TTFT is roughly ten seconds against Luna's under half a second.",
+        "Works the crossover explicitly: Luna wins on short responses, and Flash only wins total wall clock once responses reach thousands of tokens.",
+        "Concludes that Gemini Flash is a throughput pick for long generations or batch pipelines rather than an interactive latency pick.",
+        "Flags that published TTFT figures for Flash conflict across sources rather than presenting one number as settled."
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "My agent takes about 3 minutes per task on Luna at medium. I want to switch to something faster. Each task makes roughly 40 tool calls, mostly file reads that it issues one at a time.",
+      "expected_output": "The loop is round-trip bound, not model bound. Parallelize the reads; there is also no faster tier to switch to, since Luna is already the fastest.",
+      "files": [],
+      "expectations": [
+        "Identifies serial tool round trips as the dominant contributor to wall clock rather than token generation.",
+        "Points out that Luna is already the fastest tier available, so there is no faster model to switch to within the OpenAI ladder.",
+        "Recommends issuing the independent file reads in parallel, noting reported reductions up to 90% on tool-heavy work.",
+        "Declines the model switch as the first move and asks where the time is actually going.",
+        "Does not recommend lowering reasoning effort as the primary fix for a round-trip-bound loop."
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "I need to run a 4,000-case regression eval through a model overnight. I was going to put it on Luna at low effort to keep the bill down. Reasonable?",
+      "expected_output": "Establish the actual deadline first. If there is genuine slack this is the batch class, and the Batch API's 50% discount is the cost lever instead of suppressing effort.",
+      "files": [],
+      "expectations": [
+        "Asks what deadline the run actually has to hit rather than treating 'overnight' as equivalent to having no latency budget.",
+        "Warns that the Batch API's 24 hour turnaround ceiling can miss a next-morning deadline, so it fits only if there is real slack.",
+        "Recommends the Batch API's 50% discount as the correct cost lever for work that does have slack.",
+        "States that effort should be set by what the eval is meant to measure rather than suppressed to control cost.",
+        "Warns that if the eval is measuring production behavior, the configuration under test must match production rather than being chosen for cost."
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "Our overnight security reviews take too long to finish. I want to move them from Sol to Terra because Terra is faster.",
+      "expected_output": "Refuse Terra. The balanced tier is enclosed on latency as well as cost, so if wall clock has to be traded at all, it is traded by lowering Sol's effort, not by changing tier.",
+      "files": [],
+      "expectations": [
+        "Refuses the move to gpt-5.6-terra and states that the balanced tier is off the joint frontier on latency as well as on cost.",
+        "Explains that Sol at a lower effort buys more wall clock than Terra does, so the balanced tier is not the way to spend a latency budget.",
+        "Establishes what deadline the review has to hit before trading any quality for speed, rather than accepting 'too long' as a specification.",
+        "Keeps security review on the frontier tier at xhigh per the routing table, and treats moving the work off the critical path as preferable to running a degraded review.",
+        "Does not accept 'it is faster' as sufficient justification for routing to the balanced tier."
       ]
     }
   ]

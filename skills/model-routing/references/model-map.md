@@ -1,9 +1,9 @@
 # Model map
 
-**Model and pricing facts last verified: 2026-08-04. VS Code runSubagent labels
-last verified: 2026-08-19.** This is the volatile half of the skill. When
-anything here changes, update the affected verification date. The tier logic in
-`SKILL.md` is designed to survive without edits.
+**Model, pricing, and speed facts last verified: 2026-08-24. VS Code
+runSubagent labels last verified: 2026-08-19.** This is the volatile half of the
+skill. When anything here changes, update the affected verification date. The
+tier logic in `SKILL.md` is designed to survive without edits.
 
 ## OpenAI GPT-5.6 family
 
@@ -13,12 +13,19 @@ independent and are intended to persist across future releases, so
 
 | Tier | Model ID | Input $/1M | Cached input $/1M | Output $/1M |
 |---|---|---|---|---|
-| Frontier | `gpt-5.6-sol` | 5.00 | 0.50 | 30.00 |
+| Frontier | `gpt-5.6-sol` | 4.00 | 0.40 | 20.00 |
 | Balanced | `gpt-5.6-terra` | 2.00 | 0.20 | 12.00 |
 | Efficient | `gpt-5.6-luna` | 0.20 | 0.02 | 1.20 |
 
 `gpt-5.6` is an alias that resolves to Sol. Do not use it in production code,
 because it silently bills at frontier rates.
+
+**Sol's $4/$20 is promotional and expires 2026-11-21**, reverting to the list
+price of $5/$30. Every Sol cost figure in this skill uses the promotional rate.
+When it lapses, Sol's relative cost rises from ~17x Luna to ~25x Luna and the
+cost grid below must be recomputed. Sources:
+[OpenAI pricing](https://developers.openai.com/api/docs/pricing),
+[CometAPI](https://www.cometapi.com/gpt-5-6-pricing/).
 
 **Prices changed on 2026-07-30.** Terra dropped about 20% from $2.50/$15, and
 Luna dropped about 80% from $1.00/$6.00. Any advice written before that date
@@ -27,7 +34,72 @@ undervalues Luna badly. Sources:
 [BenchLM API pricing](https://benchlm.ai/openai/api-pricing),
 [explainX](https://www.explainx.ai/blog/openai-gpt-5-6-luna-terra-price-cuts-july-2026).
 
-Relative per-token cost: Terra is 10x Luna, Sol is 25x Luna and 2.5x Terra.
+Relative per-token cost, normalized on output price: Terra is 10x Luna, Sol is
+~17x Luna and ~1.7x Terra. Note that the promotional rate breaks the previously
+clean 1:10:25 ratio, and Sol's input-to-output ratio (1:5) now differs from
+Terra's and Luna's (1:6), so input-normalized and output-normalized figures no
+longer agree. The grid below is output-normalized.
+
+## Speed and latency
+
+The axis that the cost tables above say nothing about. Output speed is measured
+in tokens per second (TPS) at `max` effort; time to first token (TTFT) is
+measured to the first *answer* token, after any thinking phase.
+
+| Model | Output TPS | Intelligence index | TTFT |
+|---|---|---|---|
+| `gpt-5.6-luna` | 140-149 | 51 | <0.4 s |
+| `gpt-5.6-terra` | 105-121 | 55 | ~0.4 s |
+| `gpt-5.6-sol` | 72-110 | 59 | ~0.5 s |
+
+**Sources disagree on the exact TPS figures.** Two independent passes over
+Artificial Analysis returned 140/121/72 and 149/105-120/90-110 for
+Luna/Terra/Sol. Treat the ranges as directional. What both agree on, and what
+the routing rule actually depends on, is the *ordering and rough spacing*: Luna
+is fastest, Terra is close behind, and Sol is roughly half Luna's rate.
+Sources: [Sol](https://artificialanalysis.ai/models/gpt-5-6-sol),
+[Terra](https://artificialanalysis.ai/models/gpt-5-6-terra),
+[Luna](https://artificialanalysis.ai/models/gpt-5-6-luna).
+
+**The consequence that matters is narrower than it looks.** At a *fixed* effort
+level no model here dominates another on both speed and intelligence, so Terra
+is on the speed-intelligence frontier in that frozen sense. But effort is not
+fixed, and once it varies the enclosure returns: latency is roughly output
+tokens divided by this rate, and effort moves the token count several-fold.
+Sol at `medium` ends up both faster and better than Terra at `xhigh`. See
+[evidence.md](evidence.md#terra-is-off-the-cost-frontier-and-the-speed-axis-does-not-rescue-it).
+
+TTFT figures are the weakest numbers in this file; Artificial Analysis renders
+its TTFT provider pages in JavaScript and they could not be fetched directly.
+Do not quote them to anyone without rechecking in a browser.
+
+### Unavailable speed controls
+
+Recorded so they are not rediscovered and recommended. **None of these are
+reachable from the harnesses this skill covers. Never route to them.**
+
+| Control | What it offers | Why it is out of scope |
+|---|---|---|
+| **Fast mode** | 2x price for up to 2.5x speed, quality unchanged | API-only `service_tier: "fast"`. Not available to this user |
+| **Ultrafast** | Cerebras-hosted Sol at ~750 TPS, ~14x standard Sol | Limited API preview, no published price |
+| **Claude fast mode** | 2x price for up to 2.5x speed | Research preview, API-only, not in Copilot CLI |
+
+Sources: [OpenAI fast mode](https://developers.openai.com/api/docs/guides/fast-mode),
+[OpenAI Ultrafast preview](https://openai.com/index/previewing-ultrafast/),
+[Anthropic fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode).
+
+The consequence for routing: latency has to be bought with round trips, output
+length, or caching. There is no lever that buys speed with money alone, so a
+turn that is too slow at a given quality bar is a signal to move the work off
+the interactive path, not to pay for it.
+
+### Batch API
+
+The correct destination for work with no latency budget at all: a 50% discount
+against synchronous pricing, a 24-hour turnaround ceiling, and substantially
+higher rate limits. Route evals, bulk classification, embedding jobs, and
+overnight analysis here rather than reaching for a cheaper model.
+Source: [OpenAI batch guide](https://developers.openai.com/api/docs/guides/batch).
 
 **Context and limits** (identical across all three): 1,050,000 token context
 window, 128,000 max output tokens, knowledge cutoff 2026-02-16.
@@ -54,22 +126,33 @@ when the parameter is omitted.
 
 Source: [OpenAI reasoning guide](https://developers.openai.com/api/docs/guides/reasoning).
 
+**Effort is a ceiling, not a fixed cost.** OpenAI states the models reason
+adaptively, spending fewer tokens on simple tasks and more on complex ones. A
+high effort setting on an easy task does not automatically burn the full
+multiplier. This cuts both ways for latency: raising effort does not reliably
+slow down easy work, and lowering it does not reliably speed up hard work.
+
 Two things that are **not** effort levels:
 
 - **Pro mode** is `reasoning.mode: "pro"`, settable on any GPT-5.6 model,
-  orthogonal to effort. It adds work before returning a single answer. In
-  ChatGPT it is gated to Pro and Enterprise.
-- **Ultra** is a multi-agent mode in ChatGPT Work and Codex that coordinates
-  several agents in parallel. It trades total tokens for wall-clock time and is
-  not available as an API effort value.
-
-There is also a Sol "fast mode", roughly 2.5x faster at double the price, for
-latency-sensitive frontier work.
+  orthogonal to effort, defaulting to `medium` effort. It adds work before
+  returning a single answer, and bills at standard token rates, so its cost
+  comes from generating more tokens rather than a price premium. No wall-clock
+  figures are published; expect higher latency.
+- **Ultra** is a multi-agent mode, exposed on the API as
+  `multi_agent: { enabled: true, max_concurrent_subagents: N }` behind the
+  `responses_multi_agent=v1` beta, defaulting to 3 concurrent subagents. It
+  trades total tokens for wall-clock time and is not an effort value. It
+  *reduces* wall clock on genuinely parallelizable work and *adds* overhead on
+  sequential work.
+  Source: [multi-agent guide](https://developers.openai.com/api/docs/guides/responses-multi-agent).
 
 ## Approximate effort cost multipliers
 
-Community and third-party measurements, not official OpenAI figures. Treat as
-directional. Actual reasoning tokens are visible in
+Community and third-party measurements. **No primary OpenAI source publishes
+these numbers**; a targeted search for one found only qualitative language in
+the vendor docs. Treat as directional and do not quote them as vendor figures.
+Actual reasoning tokens are visible in
 `output_tokens_details.reasoning_tokens`, and models reason adaptively, so
 simple tasks cost less than these multipliers imply.
 
@@ -84,6 +167,14 @@ simple tasks cost less than these multipliers imply.
 
 Source: [Artificial Analysis](https://artificialanalysis.ai/articles/gpt-5-6-has-landed).
 
+The tokens and latency columns track each other closely, and that is the
+mechanism behind the whole latency section of `SKILL.md`: reasoning tokens are
+generated at the model's output rate, so anything that changes token count
+changes wall clock roughly proportionally. OpenAI's own latency guidance puts
+it as "cutting 50% of your output tokens may cut ~50% of your latency", against
+only 1% to 5% for halving the *input*.
+Source: [latency optimization guide](https://developers.openai.com/api/docs/guides/latency-optimization).
+
 ### Effective cost grid
 
 Model price multiplied by effort token burn, normalized so Luna medium is 1x.
@@ -94,12 +185,13 @@ cheaper than Terra `low`.
 |---|---|---|---|---|---|
 | **Luna** | 0.35x | 1x | 1.75x | 2.5x | 4x |
 | **Terra** | 3.5x | 10x | 17.5x | 25x | 40x |
-| **Sol** | 8.75x | 25x | 43.75x | 62.5x | 100x |
+| **Sol** | 5.8x | 16.7x | 29x | 42x | 67x |
 
 **Method and its limits.** Effort multipliers are the midpoints of the ranges
-above, so `low` is 0.35x and `high` is 1.75x. The cross-model ratio is 1:10:25
-for Luna:Terra:Sol, which holds whether you normalize on input or output price,
-because the three models share the same input-to-output price ratio.
+above, so `low` is 0.35x and `high` is 1.75x. The cross-model ratio is
+1:10:16.7 for Luna:Terra:Sol, output-normalized, using Sol's promotional price.
+Under Sol's $5/$30 list price the ratio returns to 1:10:25 and every Sol figure
+in this row rises by about 50%.
 
 The effort axis is the weak part. Effort mostly inflates reasoning and output
 tokens while input cost stays roughly fixed, so these behave as
@@ -108,8 +200,12 @@ request with a large prompt and a short answer will show a much flatter effort
 curve than this grid implies. Treat the model axis as solid and the effort axis
 as directional.
 
-`SKILL.md` rounds these to whole numbers (9x, 44x, 62x). Do not read precision
-into any of them.
+`SKILL.md` rounds these to whole numbers (6x, 17x, 29x, 42x). Do not read
+precision into any of them.
+
+Note that the Luna `xhigh` versus Terra `low` crossover (2.5x against 3.5x)
+survives the price correction, so the barbell argument does not depend on which
+Sol price is in effect.
 
 ## Older OpenAI models
 
@@ -144,11 +240,64 @@ read. Monitor the ratio of `cache_write_tokens` to `cached_tokens`.
 
 Source: [OpenAI prompt caching guide](https://developers.openai.com/api/docs/guides/prompt-caching).
 
+Caching is also a **latency** lever, not only a cost lever: a cache hit skips
+prefill on the cached prefix and so reduces TTFT. OpenAI confirms the direction
+but publishes no figures, and no controlled measurement was found. Practitioner
+reports of 30% to 70% TTFT reduction on large static prefixes are consensus
+rather than measurement.
+
 **Programmatic tool calling** lets the model coordinate tools in code rather
 than through round trips. OpenAI reports leaner system prompts plus PTC
 improving eval scores 10% to 15% while cutting tokens 41% to 66%. Worth using
 for bounded, tool-heavy workflows with predictable output schemas.
 Source: [OpenAI migration guide](https://developers.openai.com/api/docs/guides/latest-model).
+
+## Latency levers: measured gains
+
+Evidence for the lever ordering in `SKILL.md`, which is the single normative
+list. This table is evidentiary; do not read it as a second procedure, and note
+that two of its rows are not levers you can pull.
+
+| Lever | Claimed gain | Confidence |
+|---|---|---|
+| Parallel tool calls and parallel subagents | Up to 90% cut in wall clock on tool-heavy research | Anthropic production engineering blog |
+| Generate fewer output tokens (lower effort, cap `max_output_tokens`, demand concision) | Roughly proportional: 50% fewer tokens, ~50% less latency | OpenAI latency guide |
+| Prompt caching | 30% to 70% of TTFT | Practitioner consensus, no published figure |
+| Predicted outputs, for edits where most output is unchanged | "Significantly reduce latency"; rejected tokens still billed | [OpenAI predicted outputs](https://developers.openai.com/api/docs/guides/predicted-outputs) |
+| *(not a lever)* Speculative decoding | 2x to 3x | Provider-side and already inside the published TPS figures |
+| *(not a lever)* Reduce input tokens | 1% to 5% only | OpenAI latency guide. Use this for cost and context quality, not for latency |
+
+Sources: [Anthropic multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system),
+[OpenAI latency optimization](https://developers.openai.com/api/docs/guides/latency-optimization),
+Leviathan et al., [arXiv:2211.17192](https://arxiv.org/abs/2211.17192).
+
+Two findings worth stating explicitly because they contradict intuition:
+
+- **Shrinking the prompt is nearly useless for latency.** Halving input buys 1%
+  to 5%. Halving output buys ~50%. People reach for the wrong one.
+- **Streaming does not help reasoning models the way it helps chat models.**
+  The model emits thinking tokens before any answer token, so there is a "dark
+  period" during which streaming has nothing to show. OpenAI's recommended
+  mitigations are progress indication and asking for a short preamble before
+  deeper reasoning, which improves time to first *visible* token without
+  changing time to first answer token.
+
+## Human latency thresholds
+
+The thresholds behind the interactive budget in `SKILL.md`, unchanged since
+Miller 1968 and Card et al. 1991, popularized by Nielsen:
+
+| Threshold | Meaning |
+|---|---|
+| 0.1 s | Feels instantaneous |
+| 1 s | Upper limit for uninterrupted flow of thought |
+| 10 s | Upper limit for holding attention; beyond this the user context-switches and must reorient on return |
+
+Source: [Nielsen, response time limits](https://www.nngroup.com/articles/response-times-3-important-limits/).
+
+No published study was found measuring the latency at which a developer
+abandons or rejects an AI coding suggestion. The widely repeated "300 ms for
+inline completion" figure is practitioner lore, not a citable measurement.
 
 ## Harness syntax
 
@@ -182,13 +331,25 @@ models and their supported efforts, as exposed by the CLI:
 | `gpt-5.3-codex`, `gpt-5.4-mini` | default | low, medium, high, xhigh |
 | `gpt-5-mini` | default | low, medium, high |
 | `claude-opus-5`, `claude-opus-4.8`, `claude-opus-4.7` | default, long_context | low, medium, high, xhigh, max |
-| `claude-opus-4.6`, `claude-sonnet-4.6` | default, long_context | low, medium, high, max |
 | `claude-sonnet-5` | default, long_context | low, medium, high, xhigh, max |
+| `claude-opus-4.6`, `claude-sonnet-4.6` | default, long_context | low, medium, high, max |
+| `claude-haiku-4.5` | default | low, medium, high |
 | `gemini-3.1-pro-preview` | default, long_context | low, medium, high |
+| `gemini-3.7-flash` | default, long_context | low, medium, high |
 | `gemini-3.6-flash`, `gemini-3.5-flash` | default, long_context | minimal, low, medium, high |
+| `grok-4.6` | default, long_context | low, medium, high, xhigh |
 | `grok-4.5` | default, long_context | low, medium, high |
+| `mai-code-1.1-flash`, `mai-code-1-flash-picker` | default | low, medium, high |
 
 Note that `none` is not selectable here; `low` is the floor for OpenAI models.
+`minimal` is exposed **only** on Gemini 3.5 and 3.6 Flash. It is not available
+on Gemini 3.7 Flash, which is a common wrong assumption given the naming.
+
+Read this table as volatile even by the standards of this file. It is derived
+from the live tool schema, and models appear and disappear between releases:
+`claude-haiku-4.5`, `gemini-3.7-flash`, `grok-4.6`, and the `mai-code-1` family
+were all absent at the previous verification on 2026-08-04. Re-derive it from
+the schema rather than trusting this copy.
 
 ### OpenAI API and Agents SDK
 
@@ -217,12 +378,42 @@ quickly.
 ## Non-OpenAI models
 
 Approximate figures for the models selectable in Copilot CLI. Verify prices
-before quoting them to anyone.
+before quoting them to anyone. Speed figures are third-party and provider
+dependent; Copilot CLI does not publish which provider it routes to.
 
-| Model | Input / Output $/1M | Context | Pick it for |
+| Model | In / Out $/1M | Context | Output TPS | TTFT | Pick it for |
+|---|---|---|---|---|---|
+| Claude Opus 5 | 5 / 25 | 1M | 56-62 | ~0.75 s | Classic repo-editing benchmarks; highest measured intelligence index (63) |
+| Claude Sonnet 5 | 2 / 10 | 1M | not found | p95 ~20 s | Strongest middle tier; good default under Claude Code |
+| Claude Haiku 4.5 | 1 / 5 | **200K** | 94-139 | **~0.6 s** | The only non-OpenAI model with sub-second TTFT. SWE-Bench Verified 73.3% |
+| Claude Sonnet 4.6 | 3 / 15 | 1M | 44-55 | ~1.1 s | Superseded by Sonnet 5 |
+| Claude Opus 4.6 / 4.7 / 4.8 | 5 / 25 | 1M | not found | not found | Superseded by Opus 5 at the same price |
+| Gemini 3.1 Pro | 2 / 12 (4 / 18 above 200K) | 1M | 121-126 | 23-35 s | Very large inputs, multimodal, abstract reasoning. Not for interactive work |
+| Gemini 3.7 Flash | 0.75 / 3.75 (intro) | 1M | **340-357** | ~10-12 s | Highest throughput available. Intelligence index 56, above Luna |
+| Gemini 3.6 Flash | 1.50 / 7.50 | 1M | 225-304 | 13-19 s | High-volume multimodal. Not for deep code logic |
+| Gemini 3.5 Flash | 1.50 / 9 | 1M | 170-225 | 17-19 s | Superseded by 3.6 on both price and speed |
+| Grok 4.6 | 2 / 6 | 500K | ~61 (disputed) | p95 ~6 s | Intelligence index 61, near Sol, at a third of the price. SWE-Bench 95.6% |
+| Grok 4.5 | 2 / 6 | 500K | ~61 (disputed) | p95 ~6 s | Superseded by 4.6 |
+| GPT-5.4-mini | 0.75 / 4.50 | 400K | 163-201 | 0.7-3.8 s | Nothing new. Luna is cheaper and stronger |
+
+**The Gemini Flash trap.** Flash models have the highest tokens per second and
+some of the worst time to first token, because they think before emitting an
+answer token. High TPS does not mean low latency. Worked example against Luna
+at 149 TPS and <0.4 s TTFT:
+
+| Response length | Luna | Gemini 3.7 Flash | Winner |
 |---|---|---|---|
-| Claude Opus 5 | ~5 / ~25 | 1M | Classic repo-editing benchmarks; leads SWE-Bench Pro at ~80% |
-| Claude Sonnet 5 | ~2 / ~10 | 1M | Strongest middle tier; good default under Claude Code |
-| Gemini 3.1 Pro | ~2 / ~12 | 1M to 2M | Very large inputs, multimodal, abstract reasoning |
-| Gemini 3.5 / 3.6 Flash | ~1.50 / ~7.50 | 1M | High-volume multimodal. Not for deep code logic |
-| Grok 4.5 | ~2 / ~6 | 500K | Interactive single-file coding at low cost per turn |
+| 500 tokens | ~4.1 s | ~13.5 s | Luna, by 3x |
+| 5,000 tokens | ~34 s | ~27 s | Flash, by ~20% |
+
+So Flash is a **throughput** pick for long generations and batch pipelines, and
+a bad **latency** pick for short interactive turns. One source reports 0.4-0.5 s
+TTFT for Flash in agentic pipelines against Artificial Analysis's 10-12 s; the
+likely reconciliation is that the low figure measures the first *thinking*
+token. Copilot CLI does not surface thinking tokens, so assume the high figure.
+
+**Grok 4.6 caveat.** It gained sharply on single-issue patching (SWE-Bench 86%
+to 95.6%) while slightly *regressing* on multi-step agentic coding (LiveBench
+56.5 to 54.2). Marketing emphasizes the first. For long-horizon agent loops the
+gain may not be real. Its TPS figure is contradicted across sources and should
+be rechecked before it is relied on.
