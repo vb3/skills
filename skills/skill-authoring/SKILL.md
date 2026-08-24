@@ -96,6 +96,30 @@ be matched, not to read well.
 For an available skill that still does not fire, the description is the first
 thing to fix and usually the only thing that needs fixing.
 
+## Choose who can invoke it
+
+Invocation controls are independent. Decide whether the agent should load the
+skill automatically and whether the user should invoke it directly:
+
+| Intended surface | Frontmatter |
+|---|---|
+| Agent and user | Omit both fields (the default) |
+| Agent only | `user-invocable: false` |
+| User only | `disable-model-invocation: true` |
+| Neither | Do not create this combination; disable or remove the skill instead |
+
+Use agent-and-user for capabilities that are useful both when inferred from a
+request and when explicitly selected. Use agent-only for background knowledge
+or routing guidance that has no meaningful command interface. Use user-only for
+an explicit workflow the agent must not start on its own, such as a costly or
+destructive operation. Invocation controls do not replace tool permissions or
+approval gates.
+
+These fields are supported by Copilot CLI, GitHub Copilot in VS Code, and
+Claude Code, but are not in the open Agent Skills specification. A portable
+skill must remain safe if another host ignores them. See
+[references/platform-notes.md](references/platform-notes.md#invocation-controls).
+
 ## Writing the procedure
 
 **State every rule exactly once.** A rule repeated in two sections will drift,
@@ -230,14 +254,16 @@ In order, because the early checks invalidate the later ones:
    matters until it loads.
 2. Would the description match how a user actually phrases this request, and
    would it wrongly match neighbouring requests it should not serve?
-3. Run `scripts/validate_skill.py` on it and clear anything it reports.
-4. Does any step describe a deterministic procedure the model must re-derive?
-5. Is any rule stated in two places, and do the copies still agree?
-6. Does every claim about a command's behavior or output match what that
+3. Should the agent, the user, or both be able to invoke it, and does the
+   frontmatter encode that choice without relying on it as a safety boundary?
+4. Run `scripts/validate_skill.py` on it and clear anything it reports.
+5. Does any step describe a deterministic procedure the model must re-derive?
+6. Is any rule stated in two places, and do the copies still agree?
+7. Does every claim about a command's behavior or output match what that
    command actually does? Run it.
-7. Is every validation step executable, with a named command and expected
+8. Is every validation step executable, with a named command and expected
    result?
-8. Do the evals cover the failure branches and the negative trigger case, or
+9. Do the evals cover the failure branches and the negative trigger case, or
    only the happy path?
 
 Report findings as defects with severity, not as a rewrite. Fix the description

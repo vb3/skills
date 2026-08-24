@@ -165,6 +165,20 @@
         "Differentiates the triggering vocabulary so each description claims distinct situations.",
         "Recommends an eval where a near-miss phrasing must not load the skill."
       ]
+    },
+    {
+      "id": 14,
+      "prompt": "Classify these two skills for Copilot CLI and Claude Code. `api-conventions` is background guidance the agent should apply automatically, but it should not appear as a slash command. `deploy-production` must run only when I explicitly invoke it. Both skills should remain portable to other Agent Skills hosts.",
+      "expected_output": "Treats model and user invocation as independent controls, configures the background skill as agent-only and deployment as user-only, and explains that unsupported hosts may ignore both fields.",
+      "files": [],
+      "expectations": [
+        "Sets `user-invocable: false` on `api-conventions` and does not disable model invocation for it.",
+        "Sets `disable-model-invocation: true` on `deploy-production` and leaves user invocation enabled.",
+        "Explains that the two fields control independent invocation paths rather than naming mutually exclusive skill types.",
+        "States that Copilot CLI, GitHub Copilot in VS Code, and Claude Code support the fields.",
+        "States that neither field is part of the open Agent Skills specification and another host may ignore them.",
+        "Does not present invocation metadata as a replacement for tool permissions or user approval gates."
+      ]
     }
   ]
 }

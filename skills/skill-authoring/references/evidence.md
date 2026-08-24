@@ -1,6 +1,6 @@
 # Evidence
 
-Dated 2026-08-19. Sources verified by direct fetch. This file holds the exact
+Dated 2026-08-24. Sources verified by direct fetch. This file holds the exact
 quotes behind `SKILL.md`, plus everything that carries a caveat. Read it before
 repeating a claim from this skill to anyone else.
 
@@ -15,6 +15,7 @@ repeating a claim from this skill to anyone else.
 | Claude Code: skills | <https://code.claude.com/docs/en/skills> |
 | GitHub Copilot CLI: adding agent skills | <https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills> |
 | GitHub Copilot: about agent skills | <https://docs.github.com/en/copilot/concepts/agents/about-agent-skills> |
+| GitHub Copilot in VS Code: agent skills | <https://code.visualstudio.com/docs/agent-customization/agent-skills> |
 | anthropics/skills repository | <https://github.com/anthropics/skills> |
 | awesome-copilot `appinsights-instrumentation` | <https://github.com/github/awesome-copilot/blob/main/skills/appinsights-instrumentation/SKILL.md> |
 
@@ -97,6 +98,35 @@ On splitting:
 The open spec states the three levels as metadata (~100 tokens, always loaded),
 instructions (<5000 tokens recommended), and resources (loaded when required).
 The 5000 figure is a recommendation, not an enforced limit.
+
+## Invocation controls
+
+The open Agent Skills specification does not define `user-invocable` or
+`disable-model-invocation`. Its frontmatter table contains `name`,
+`description`, `license`, `compatibility`, `metadata`, and the experimental
+`allowed-tools` field.
+
+GitHub Copilot in VS Code documents:
+
+> `user-invocable`: Controls whether the skill appears as a slash command in
+> the chat menu. Defaults to `true`. Set to `false` to hide the skill from the
+> `/` menu while still allowing the agent to load it automatically.
+
+and:
+
+> `disable-model-invocation`: Controls whether the agent can automatically load
+> the skill based on relevance. Defaults to `false`. Set to `true` to require
+> manual invocation through the `/` slash command only.
+
+Claude Code documents the same defaults and semantics, and explicitly labels
+invocation control as an extension to the open standard.
+
+Copilot CLI's published authoring page does not list either field, but version
+1.0.81-8 provides direct implementation evidence. Its packaged changelog
+contains "Skills support `disable-model-invocation` frontmatter field" and
+"Fully honor the skill disable-model-invocation flag." Two packaged built-in
+skills set `user-invocable: false`. Treat this as verified behavior for that
+version, not a portable specification guarantee.
 
 ## Script conventions
 

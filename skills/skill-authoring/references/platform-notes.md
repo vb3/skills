@@ -1,32 +1,58 @@
 # Platform Notes
 
-Dated 2026-08-19. Volatile. Frontmatter fields, discovery rules, and CLI
+Dated 2026-08-24. Volatile. Frontmatter fields, discovery rules, and CLI
 subcommands change between releases. Recheck against `copilot skill --help` and
 the vendor docs before relying on anything here.
 
 ## Frontmatter
 
-Only `name` and `description` are required, and only those two are portable
-across every runtime. Everything else is host-specific and is ignored rather
-than rejected by hosts that do not implement it.
+Only `name` and `description` are required. The open specification also defines
+the optional `license`, `compatibility`, `metadata`, and experimental
+`allowed-tools` fields. Invocation controls and command presentation fields are
+host extensions; unsupported hosts may ignore them.
 
-Fields observed in use, tallied across installed skills on this machine:
+Fields verified in the open specification or supported hosts:
 
 | Field | Notes |
 |---|---|
 | `name` | Required. Kebab-case, matches the directory name. |
 | `description` | Required. The entire retrieval surface. |
-| `license` | Common in published skills. |
-| `metadata` | Common in published skills; free-form host data. |
-| `compatibility` | Used in this repo to declare runtime and tool prerequisites. |
-| `user-invocable` | Copilot CLI. Set `false` on the two bundled built-in skills, which are agent-triggered only. |
-| `argument-hint` | Rare. Slash-command style hint. |
-| `allowed-tools` | Open-spec experimental. Space-separated, e.g. `Bash(git:*) Bash(jq:*) Read`. Not observed in any installed `SKILL.md` frontmatter here. Do not depend on it for security. |
+| `license` | Optional open-spec field. |
+| `metadata` | Optional open-spec field for free-form host data. |
+| `compatibility` | Optional open-spec field for runtime and tool prerequisites. |
+| `user-invocable` | Copilot CLI, GitHub Copilot in VS Code, and Claude Code. Defaults to `true`; `false` hides direct user invocation while preserving automatic agent loading. |
+| `disable-model-invocation` | Copilot CLI, GitHub Copilot in VS Code, and Claude Code. Defaults to `false`; `true` prevents automatic agent loading and requires direct user invocation. |
+| `argument-hint` | Copilot CLI, GitHub Copilot in VS Code, and Claude Code. Slash-command style hint. |
+| `allowed-tools` | Open-spec experimental and supported by Copilot CLI. Space-separated, e.g. `Bash(git:*) Bash(jq:*) Read`. Do not depend on it for security. |
 
 Treat `allowed-tools` as advisory. Enforcement varies by host, and Copilot CLI
 warns that pre-approving `shell` or `bash` "removes the confirmation step for
 running terminal commands and can allow attacker-controlled skills or prompt
 injections to execute arbitrary commands in your environment."
+
+### Invocation controls
+
+`user-invocable` and `disable-model-invocation` control separate paths:
+
+| `user-invocable` | `disable-model-invocation` | Result |
+|---|---|---|
+| omitted or `true` | omitted or `false` | Agent and user can invoke |
+| `false` | omitted or `false` | Agent only |
+| omitted or `true` | `true` | User only |
+| `false` | `true` | No normal invocation path; avoid |
+
+They are host extensions, not fields in the open Agent Skills specification.
+Do not use either as a security boundary: another host may ignore unknown
+frontmatter, and a host that honors them still applies its own tool permission
+and approval model.
+
+GitHub Copilot in VS Code documents both fields. Copilot CLI 1.0.81-8 also
+implements both: its bundled `customize-cloud-agent` and `github-pr-media`
+skills use `user-invocable: false`, and its packaged changelog records support
+for and full enforcement of `disable-model-invocation`. The current
+CLI-specific authoring page describes automatic and `/name` invocation but
+does not list either field, so verify behavior again when the CLI version
+changes. Claude Code documents both as extensions to the open specification.
 
 ## Copilot CLI
 
@@ -107,6 +133,8 @@ command as a normal step instead.
 ## Writing for portability
 
 - Keep `name` and `description` doing all the load-bearing work.
+- Treat invocation controls as optional host behavior; make the skill safe if
+  an unsupported host ignores them.
 - Reference bundled files by path relative to the skill root, never by absolute
   path or host-specific skills directory.
 - **Dependency rule.** A script must be self-contained or declare its
