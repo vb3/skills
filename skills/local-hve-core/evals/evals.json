@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Wire this repository to my local HVE-Core clone at ~/repos/forks/microsoft-hve-core. Do not install the extension.",
-      "expected_output": "A local .hve-core symlink, dynamically generated VS Code chat locations, project-local Copilot CLI skill links, local Git exclusion, and validation without marketplace installation.",
+      "expected_output": "A local .hve-core symlink, dynamically generated VS Code chat locations, project-local Copilot CLI skill and agent links, local Git exclusion, and validation without marketplace installation.",
       "files": [],
       "expectations": [
         "Runs scripts/wire_hve_core.py rather than performing the symlink, exclude, settings, and registration steps by hand.",
@@ -15,6 +15,7 @@
         "Excludes the installer and experimental skill packages.",
         "Does not configure the .hve-core/.github/skills root as a VS Code skills location.",
         "Links each non-excluded skill package into the project's .github/skills directory.",
+        "Links each non-excluded agent package and root-level agent profile into the project's .github/agents directory.",
         "Tells the user to run /skills reload when skill links change during an active session.",
         "Does not install or modify a marketplace extension."
       ]
@@ -121,6 +122,44 @@
         "Leaves the project's own skills in .github/skills untouched.",
         "Leaves the VS Code chat location settings unchanged.",
         "Tells the user to run /skills reload in the active Copilot CLI session."
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Wire this project to local HVE-Core. Its tracked .vscode/settings.json must not be changed without my approval.",
+      "expected_output": "Setup reports the required settings changes and stops before mutating any project state.",
+      "files": [],
+      "expectations": [
+        "Detects that .vscode/settings.json is tracked by Git.",
+        "Exits through the tracked-settings approval gate before creating .hve-core, project links, or exclude rules.",
+        "Reports the exact missing and stale settings entries.",
+        "Changes the tracked file only after explicit approval via --allow-tracked-settings."
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "My HVE-Core checkout removed a skill package. Reconcile this project's local wiring.",
+      "expected_output": "Only obsolete HVE-Core links, settings entries, and local exclude rules are removed, while current and project-owned configuration remains.",
+      "files": [],
+      "expectations": [
+        "Identifies stale symlinks by their targets through the project .hve-core link.",
+        "Removes the stale link and its exact local exclude rule.",
+        "Removes the obsolete .hve-core chat location from strict JSON settings.",
+        "Leaves unrelated project skills, agents, settings, and exclude rules unchanged.",
+        "Verification passes after reconciliation."
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Stop using my local HVE-Core checkout in this project and remove only its local wiring.",
+      "expected_output": "The HVE-Core project links, settings entries, exclude rules, and matching .hve-core symlink are removed without touching project-owned configuration.",
+      "files": [],
+      "expectations": [
+        "Runs the script's unwire mode rather than deleting paths ad hoc.",
+        "Removes only symlinks whose targets point through .hve-core.",
+        "Removes only .hve-core chat location entries and matching local exclude rules.",
+        "Preserves project-owned skills, agents, settings, and unrelated exclude rules.",
+        "Stops without mutation when JSONC needs a manual merge or tracked settings lack explicit approval."
       ]
     }
   ]

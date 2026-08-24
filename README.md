@@ -11,7 +11,7 @@ that describes when and how the agent should use it, plus any supporting files
 | Skill | What it does |
 | --- | --- |
 | [`azure-fastapi-easy-auth`](skills/azure-fastapi-easy-auth/) | Scaffold, secure, deploy, and troubleshoot FastAPI on Azure Functions or App Service behind Microsoft Entra Easy Auth. Covers authsettingsV2 Bicep, azd deployment, delegated vs app-only access, and 401 or 403 triage. |
-| [`local-hve-core`](skills/local-hve-core/) | Wire a project to a local HVE-Core clone through a `.hve-core` symlink, VS Code chat component locations, and Copilot CLI skill directories, instead of installing the marketplace extension. |
+| [`local-hve-core`](skills/local-hve-core/) | Wire or unwire a project-local HVE-Core clone for VS Code and Copilot CLI without installing the marketplace extension or registering components globally. |
 | [`model-routing`](skills/model-routing/) | Pick the model and reasoning effort for a task, including for subagents about to be spawned. Also the first thing to check when a run is too slow, too expensive, or worse than expected. |
 | [`skill-authoring`](skills/skill-authoring/) | Author, review, and debug the skills in this repo. Decides what belongs in a bundled script versus prose, keeps descriptions triggerable, and validates structure. |
 | [`tdd-with-agents`](skills/tdd-with-agents/) | Decide whether test-first work is worth it when an agent writes the code, and run the workflow that replaces it. Covers where the human checkpoint goes and how to tell if agent-written tests are a real safety net. |

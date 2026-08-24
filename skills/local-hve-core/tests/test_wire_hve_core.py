@@ -33,6 +33,7 @@ PACKAGES = {
     "hooks": ["shared"],
 }
 SUBAGENTS = {"agents": ["hve-core", "experimental"]}
+ROOT_AGENT_FILES = ["dependency-reviewer.agent.md", "issue-triage.agent.md"]
 
 
 def build_source(root: Path) -> Path:
@@ -44,6 +45,9 @@ def build_source(root: Path) -> Path:
             (package / "SKILL.md").write_text("stub\n", encoding="utf-8")
             if name in SUBAGENTS.get(component, []):
                 (package / "subagents").mkdir()
+    agents_root = source / ".github" / "agents"
+    for name in ROOT_AGENT_FILES:
+        (agents_root / name).write_text("stub\n", encoding="utf-8")
     return source
 
 
@@ -62,6 +66,7 @@ class Harness(unittest.TestCase):
         self.project = build_project(self.root)
         self.copilot_settings = self.root / "copilot-settings.json"
         self.copilot_settings.write_text(json.dumps({"skillDirectories": []}), encoding="utf-8")
+        self.copilot_agents = self.root / "copilot-agents"
         self.addCleanup(self._tmp.cleanup)
 
     def run_mode(self, mode: str, *extra: str) -> tuple[int, dict]:
@@ -73,6 +78,8 @@ class Harness(unittest.TestCase):
             str(self.source),
             "--copilot-settings",
             str(self.copilot_settings),
+            "--copilot-agents",
+            str(self.copilot_agents),
             *extra,
         ]
         import io
@@ -234,14 +241,49 @@ class ApplyTests(Harness):
         self.assertEqual(lines.count(".hve-core"), 1)
         self.assertFalse((self.project / ".gitignore").exists())
 
+    def test_preexisting_exclude_rule_is_not_claimed_or_removed(self) -> None:
+        exclude = self.project / ".git" / "info" / "exclude"
+        with exclude.open("a", encoding="utf-8") as handle:
+            handle.write("/.github/skills/rpi\n")
+
+        self.run_mode("apply")
+        self.run_mode("unwire")
+
+        lines = exclude.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines.count("/.github/skills/rpi"), 1)
+
+    def test_malformed_managed_exclude_block_blocks_before_mutation(self) -> None:
+        exclude = self.project / ".git" / "info" / "exclude"
+        with exclude.open("a", encoding="utf-8") as handle:
+            handle.write(f"{wire.EXCLUDE_BLOCK_START}\n.hve-core\n")
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_COLLISION)
+        self.assertIn("managed exclude block is malformed", state["error"])
+        self.assertFalse((self.project / ".hve-core").exists())
+        self.assertFalse((self.project / ".github").exists())
+
     def test_exclude_append_preserves_file_lacking_trailing_newline(self) -> None:
         exclude = self.project / ".git" / "info" / "exclude"
         exclude.parent.mkdir(parents=True, exist_ok=True)
         exclude.write_text("*.log\nbuild", encoding="utf-8")
         self.run_mode("apply")
         lines = exclude.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(lines[:3], ["*.log", "build", ".hve-core"])
-        self.assertEqual(lines[3:], ["/.github/skills/hve-core", "/.github/skills/rpi"])
+        self.assertEqual(lines[:3], ["*.log", "build", wire.EXCLUDE_BLOCK_START])
+        self.assertEqual(
+            lines[3:-1],
+            [
+                ".hve-core",
+                "/.github/skills/hve-core",
+                "/.github/skills/rpi",
+                "/.github/agents/accessibility",
+                "/.github/agents/hve-core",
+                "/.github/agents/dependency-reviewer.agent.md",
+                "/.github/agents/issue-triage.agent.md",
+            ],
+        )
+        self.assertEqual(lines[-1], wire.EXCLUDE_BLOCK_END)
 
     def test_apply_preserves_unrelated_and_existing_settings(self) -> None:
         vscode = self.project / ".vscode"
@@ -275,13 +317,103 @@ class ApplyTests(Harness):
         vscode = self.project / ".vscode"
         vscode.mkdir()
         original = '{\n  // keep this comment\n  "editor.tabSize": 2\n}\n'
+        exclude = self.project / ".git" / "info" / "exclude"
+        exclude_before = exclude.read_bytes()
         (vscode / "settings.json").write_text(original, encoding="utf-8")
         code, state = self.run_mode("apply")
         self.assertEqual(code, wire.EXIT_MANUAL_SETTINGS)
         self.assertEqual(state["status"], "needs-manual-settings-merge")
         self.assertEqual((vscode / "settings.json").read_text(encoding="utf-8"), original)
         self.assertIn("chat.agentSkillsLocations", state["vscode_settings"]["missing_entries"])
+        self.assertFalse((self.project / ".hve-core").exists())
+        self.assertFalse((self.project / ".github").exists())
+        self.assertEqual(exclude.read_bytes(), exclude_before)
+
+    def test_tracked_settings_require_explicit_approval_before_any_mutation(self) -> None:
+        vscode = self.project / ".vscode"
+        vscode.mkdir()
+        settings = vscode / "settings.json"
+        settings.write_text('{"editor.tabSize": 2}\n', encoding="utf-8")
+        subprocess.run(["git", "add", ".vscode/settings.json"], cwd=self.project, check=True)
+        exclude = self.project / ".git" / "info" / "exclude"
+        exclude_before = exclude.read_bytes()
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_MANUAL_SETTINGS)
+        self.assertEqual(state["status"], "needs-tracked-settings-approval")
+        self.assertTrue(state["vscode_settings"]["tracked"])
+        self.assertFalse((self.project / ".hve-core").exists())
+        self.assertFalse((self.project / ".github").exists())
+        self.assertEqual(exclude.read_bytes(), exclude_before)
+        self.assertEqual(settings.read_text(encoding="utf-8"), '{"editor.tabSize": 2}\n')
+
+    def test_tracked_settings_can_be_updated_with_explicit_approval(self) -> None:
+        vscode = self.project / ".vscode"
+        vscode.mkdir()
+        settings = vscode / "settings.json"
+        settings.write_text('{"editor.tabSize": 2}\n', encoding="utf-8")
+        subprocess.run(["git", "add", ".vscode/settings.json"], cwd=self.project, check=True)
+
+        code, state = self.run_mode("apply", "--allow-tracked-settings")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "applied")
         self.assertTrue((self.project / ".hve-core").is_symlink())
+        self.assertEqual(self.settings()["editor.tabSize"], 2)
+
+    def test_jsonc_missing_entries_name_only_what_is_absent(self) -> None:
+        self.run_mode("apply")
+        path = self.project / ".vscode" / "settings.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        dropped = data.pop("chat.agentSkillsLocations")
+        path.write_text(
+            "// keep this comment\n" + json.dumps(data, indent=2), encoding="utf-8"
+        )
+        code, state = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_MANUAL_SETTINGS)
+        missing = state["vscode_settings"]["missing_entries"]
+        self.assertEqual(sorted(missing), ["chat.agentSkillsLocations"])
+        self.assertEqual(missing["chat.agentSkillsLocations"], dropped)
+
+    def test_complete_jsonc_settings_apply_cleanly_and_are_untouched(self) -> None:
+        self.run_mode("apply")
+        path = self.project / ".vscode" / "settings.json"
+        commented = "// keep this comment\n" + path.read_text(encoding="utf-8")
+        path.write_text(commented, encoding="utf-8")
+        code, state = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "applied")
+        self.assertEqual(state["vscode_settings"]["state"], "jsonc")
+        self.assertEqual(state["vscode_settings"]["missing_entries"], {})
+        self.assertEqual(path.read_text(encoding="utf-8"), commented)
+
+    def test_complete_jsonc_with_inline_comments_and_trailing_comma_is_accepted(self) -> None:
+        self.run_mode("apply")
+        path = self.project / ".vscode" / "settings.json"
+        jsonc = path.read_text(encoding="utf-8").rstrip()
+        jsonc = jsonc[:-1] + ",\n} // keep this inline comment\n"
+        path.write_text(jsonc, encoding="utf-8")
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "applied")
+        self.assertEqual(state["vscode_settings"]["state"], "jsonc")
+        self.assertEqual(state["vscode_settings"]["missing_entries"], {})
+        self.assertEqual(path.read_text(encoding="utf-8"), jsonc)
+
+    def test_complete_strict_json_is_not_reformatted(self) -> None:
+        self.run_mode("apply")
+        path = self.project / ".vscode" / "settings.json"
+        compact = json.dumps(json.loads(path.read_text(encoding="utf-8"))) + "\n"
+        path.write_text(compact, encoding="utf-8")
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["actions"], [])
+        self.assertEqual(path.read_text(encoding="utf-8"), compact)
 
     def test_array_shaped_locations_are_never_overwritten(self) -> None:
         vscode = self.project / ".vscode"
@@ -316,6 +448,30 @@ class ApplyTests(Harness):
         code, state = self.run_mode("apply")
         self.assertEqual(code, wire.EXIT_OK)
         self.assertEqual(state["symlink"]["state"], "reuse")
+
+    def test_apply_restores_missing_root_symlink_behind_managed_links(self) -> None:
+        self.run_mode("apply")
+        (self.project / ".hve-core").unlink()
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "applied")
+        self.assertTrue((self.project / ".hve-core").is_symlink())
+        self.assertTrue((self.project / ".github" / "skills" / "rpi").is_dir())
+
+    def test_apply_reenables_disabled_required_location(self) -> None:
+        self.run_mode("apply")
+        path = self.project / ".vscode" / "settings.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        location = ".hve-core/.github/skills/rpi"
+        data["chat.agentSkillsLocations"][location] = False
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+        code, _ = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertIs(self.settings()["chat.agentSkillsLocations"][location], True)
 
 
 class ProjectSkillLinkTests(Harness):
@@ -389,6 +545,180 @@ class ProjectSkillLinkTests(Harness):
         self.assertIn(rpi, state["stale_cli_registrations"])
 
 
+class ProjectAgentLinkTests(Harness):
+    def links_dir(self) -> Path:
+        return self.project / ".github" / "agents"
+
+    def test_apply_creates_one_relative_symlink_per_package(self) -> None:
+        self.run_mode("apply")
+        package = self.links_dir() / "accessibility"
+        self.assertTrue(package.is_symlink())
+        self.assertEqual(
+            os.readlink(package), "../../.hve-core/.github/agents/accessibility"
+        )
+        self.assertTrue(package.is_dir(), "link must resolve through the .hve-core symlink")
+        self.assertFalse((self.links_dir() / "experimental").exists())
+
+    def test_apply_links_root_agent_files_individually(self) -> None:
+        self.run_mode("apply")
+        link = self.links_dir() / "dependency-reviewer.agent.md"
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(
+            os.readlink(link),
+            "../../.hve-core/.github/agents/dependency-reviewer.agent.md",
+        )
+        self.assertTrue(link.is_file())
+
+    def test_links_are_excluded_from_git(self) -> None:
+        self.run_mode("apply")
+        exclude = self.project / ".git" / "info" / "exclude"
+        lines = [line.strip() for line in exclude.read_text(encoding="utf-8").splitlines()]
+        self.assertIn("/.github/agents/accessibility", lines)
+        self.assertIn("/.github/agents/dependency-reviewer.agent.md", lines)
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=self.project,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self.assertNotIn(".github/agents", status.stdout)
+
+    def test_existing_real_package_directory_blocks_apply(self) -> None:
+        own = self.links_dir() / "hve-core"
+        own.mkdir(parents=True)
+        (own / "mine.agent.md").write_text("mine", encoding="utf-8")
+        code, state = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_COLLISION)
+        self.assertIn(".github/agents/hve-core is a directory", state["error"])
+        self.assertEqual((own / "mine.agent.md").read_text(encoding="utf-8"), "mine")
+
+    def test_existing_root_agent_file_blocks_apply(self) -> None:
+        own = self.links_dir() / "dependency-reviewer.agent.md"
+        own.parent.mkdir(parents=True)
+        own.write_text("mine", encoding="utf-8")
+        code, state = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_COLLISION)
+        self.assertIn(
+            ".github/agents/dependency-reviewer.agent.md is a file",
+            state["error"],
+        )
+        self.assertEqual(own.read_text(encoding="utf-8"), "mine")
+
+    def test_project_owned_agent_files_are_left_alone(self) -> None:
+        mine = self.links_dir() / "vertex-scribe.agent.md"
+        mine.parent.mkdir(parents=True)
+        mine.write_text("mine", encoding="utf-8")
+        code, _ = self.run_mode("apply")
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(mine.read_text(encoding="utf-8"), "mine")
+        exclude = self.project / ".git" / "info" / "exclude"
+        self.assertNotIn(
+            "/.github/agents/vertex-scribe.agent.md",
+            exclude.read_text(encoding="utf-8").splitlines(),
+        )
+
+    def test_global_agent_link_is_reported_not_created(self) -> None:
+        self.run_mode("apply")
+        self.assertFalse(self.copilot_agents.exists(), "apply must never write global agents")
+        self.copilot_agents.mkdir()
+        link = self.copilot_agents / "hve-core"
+        link.symlink_to(self.source / ".github" / "agents" / "hve-core")
+        (self.copilot_agents / "unrelated").symlink_to(self.root)
+        _, state = self.run_mode("check")
+        self.assertEqual(state["stale_global_agent_links"], [str(link)])
+
+
+class ReconciliationTests(Harness):
+    def test_apply_removes_stale_managed_links_settings_and_excludes(self) -> None:
+        self.run_mode("apply")
+        removed = self.source / ".github" / "skills" / "rpi"
+        removed.rename(self.root / "removed-rpi")
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "applied")
+        self.assertFalse((self.project / ".github" / "skills" / "rpi").exists())
+        self.assertNotIn(
+            "/.github/skills/rpi",
+            (self.project / ".git" / "info" / "exclude")
+            .read_text(encoding="utf-8")
+            .splitlines(),
+        )
+        self.assertNotIn(
+            ".hve-core/.github/skills/rpi",
+            self.settings()["chat.agentSkillsLocations"],
+        )
+        verify_code, verify_state = self.run_mode("verify")
+        self.assertEqual(verify_code, wire.EXIT_OK)
+        self.assertEqual(verify_state["failures"], [])
+
+
+class UnwireTests(Harness):
+    def test_unwire_removes_only_hve_core_wiring(self) -> None:
+        own_skill = self.project / ".github" / "skills" / "mine"
+        own_skill.mkdir(parents=True)
+        (own_skill / "SKILL.md").write_text("mine\n", encoding="utf-8")
+        own_agent = self.project / ".github" / "agents" / "mine.agent.md"
+        own_agent.parent.mkdir(parents=True)
+        own_agent.write_text("mine\n", encoding="utf-8")
+        self.run_mode("apply")
+        settings_path = self.project / ".vscode" / "settings.json"
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        settings["editor.tabSize"] = 2
+        settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        exclude = self.project / ".git" / "info" / "exclude"
+        with exclude.open("a", encoding="utf-8") as handle:
+            handle.write("*.local\n")
+
+        code, state = self.run_mode("unwire")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["status"], "unwired")
+        self.assertFalse((self.project / ".hve-core").exists())
+        self.assertTrue((own_skill / "SKILL.md").is_file())
+        self.assertEqual(own_agent.read_text(encoding="utf-8"), "mine\n")
+        remaining = json.loads(settings_path.read_text(encoding="utf-8"))
+        self.assertEqual(remaining, {"editor.tabSize": 2})
+        self.assertEqual(exclude.read_text(encoding="utf-8").splitlines()[-1], "*.local")
+        self.assertFalse(
+            any(
+                line == ".hve-core" or line.startswith("/.github/skills/")
+                or line.startswith("/.github/agents/")
+                for line in exclude.read_text(encoding="utf-8").splitlines()
+            )
+        )
+
+    def test_unwire_jsonc_gate_makes_no_changes(self) -> None:
+        self.run_mode("apply")
+        settings_path = self.project / ".vscode" / "settings.json"
+        settings_path.write_text(
+            "// preserve\n" + settings_path.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        before = {
+            "settings": settings_path.read_bytes(),
+            "exclude": (self.project / ".git" / "info" / "exclude").read_bytes(),
+            "skill": os.readlink(self.project / ".github" / "skills" / "rpi"),
+        }
+
+        code, state = self.run_mode("unwire")
+
+        self.assertEqual(code, wire.EXIT_MANUAL_SETTINGS)
+        self.assertEqual(state["status"], "needs-manual-settings-merge")
+        self.assertEqual(settings_path.read_bytes(), before["settings"])
+        self.assertEqual(
+            (self.project / ".git" / "info" / "exclude").read_bytes(),
+            before["exclude"],
+        )
+        self.assertEqual(
+            os.readlink(self.project / ".github" / "skills" / "rpi"),
+            before["skill"],
+        )
+        self.assertTrue((self.project / ".hve-core").is_symlink())
+
+
 class VerifyTests(Harness):
     def test_verify_passes_after_apply(self) -> None:
         self.run_mode("apply")
@@ -397,6 +727,27 @@ class VerifyTests(Harness):
         self.assertEqual(code, wire.EXIT_OK)
         self.assertGreater(state["configured_location_count"], 0)
         self.assertGreater(state["linked_skill_package_count"], 0)
+        self.assertGreater(state["linked_agent_package_count"], 0)
+
+    def test_verify_reports_unlinked_agent_package(self) -> None:
+        self.run_mode("apply")
+        (self.project / ".github" / "agents" / "hve-core").unlink()
+        code, state = self.run_mode("verify")
+        self.assertEqual(code, wire.EXIT_VERIFY_FAILED)
+        self.assertIn(
+            "agents package not linked: .github/agents/hve-core", state["failures"]
+        )
+
+    def test_verify_reports_global_agent_link_with_remedy(self) -> None:
+        self.run_mode("apply")
+        self.copilot_agents.mkdir()
+        link = self.copilot_agents / "prd-builder.agent.md"
+        link.symlink_to(self.source / ".github" / "agents" / "hve-core" / "SKILL.md")
+        code, state = self.run_mode("verify")
+        self.assertEqual(code, wire.EXIT_VERIFY_FAILED)
+        joined = " ".join(state["failures"])
+        self.assertIn("linked machine-wide instead of per project", joined)
+        self.assertIn(f"rm {link}", joined)
 
     def test_verify_fails_when_symlink_absent(self) -> None:
         code, state = self.run_mode("verify")
@@ -460,6 +811,18 @@ class VerifyTests(Harness):
         path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         _, state = self.run_mode("verify")
         self.assertTrue(any("not a directory" in f for f in state["failures"]))
+
+    def test_verify_detects_stale_setting_when_component_becomes_empty(self) -> None:
+        self.run_mode("apply")
+        prompts = self.source / ".github" / "prompts"
+        (prompts / "hve-core").rename(self.root / "removed-prompts")
+
+        code, state = self.run_mode("verify")
+
+        self.assertEqual(code, wire.EXIT_VERIFY_FAILED)
+        self.assertTrue(
+            any("stale HVE-Core entry" in failure for failure in state["failures"])
+        )
 
 
 class WorktreeTests(Harness):

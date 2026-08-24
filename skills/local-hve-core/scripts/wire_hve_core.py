@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Wire a project to a local HVE-Core clone: check, apply, or verify."""
+"""Wire a project to a local HVE-Core clone: check, apply, unwire, or verify."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -17,10 +16,29 @@ from typing import Any
 DEFAULT_SOURCE = "~/repos/forks/microsoft-hve-core"
 SYMLINK_NAME = ".hve-core"
 EXCLUDE_RULE = ".hve-core"
+EXCLUDE_BLOCK_START = "# local-hve-core:start"
+EXCLUDE_BLOCK_END = "# local-hve-core:end"
 PROJECT_SKILLS_SUBPATH = ".github/skills"
+PROJECT_AGENTS_SUBPATH = ".github/agents"
 COMPONENT_ROOTS = ("agents", "prompts", "instructions", "skills", "hooks")
 SKILL_ONLY_EXCLUDES = ("installer",)
 EXPERIMENTAL = "experimental"
+
+# Copilot CLI auto-discovers these two roots in the project and recurses into
+# package directories. Everything else is VS Code only.
+CLI_LINK_SUBPATHS = {
+    "skills": PROJECT_SKILLS_SUBPATH,
+    "agents": PROJECT_AGENTS_SUBPATH,
+}
+CLI_LINK_STATE_KEYS = {
+    "skills": "project_skill_links",
+    "agents": "project_agent_links",
+}
+DEFAULT_COPILOT_AGENTS = "~/.copilot/agents"
+
+# settings.json states the script may rewrite. A JSONC file is readable but not
+# writable here, because json.dumps would drop its comments.
+MERGEABLE_SETTINGS_STATES = ("absent", "strict-json")
 
 EXIT_OK = 0
 EXIT_USAGE = 1
@@ -36,9 +54,6 @@ LOCATION_SETTINGS = {
     "skills": "chat.agentSkillsLocations",
     "hooks": "chat.hookFilesLocations",
 }
-
-LINE_COMMENT = re.compile(r"^\s*//")
-
 
 class SetupError(Exception):
     """A gate failure that maps to a specific exit code."""
@@ -160,24 +175,35 @@ def compute_locations(source: Path) -> dict[str, dict[str, bool]]:
     return locations
 
 
-def expected_project_skill_links(source: Path) -> dict[str, str]:
-    """Map each linkable skill package to its symlink target, relative to the link."""
+def expected_project_links(source: Path, component: str) -> dict[str, str]:
+    """Map each linkable package or root agent file to its relative symlink target."""
+    subpath = CLI_LINK_SUBPATHS[component]
     links: dict[str, str] = {}
-    for directory in subdirectories(source / ".github" / "skills"):
-        if directory.name in SKILL_ONLY_EXCLUDES:
+    root = source / ".github" / component
+    for directory in subdirectories(root):
+        if component == "skills" and directory.name in SKILL_ONLY_EXCLUDES:
             continue
         if directory.name == EXPERIMENTAL:
             continue
-        links[directory.name] = f"../../{SYMLINK_NAME}/{PROJECT_SKILLS_SUBPATH}/{directory.name}"
+        links[directory.name] = f"../../{SYMLINK_NAME}/{subpath}/{directory.name}"
+    if component == "agents" and root.is_dir():
+        for agent_file in sorted(root.glob("*.agent.md"), key=lambda path: path.name):
+            links[agent_file.name] = (
+                f"../../{SYMLINK_NAME}/{subpath}/{agent_file.name}"
+            )
     return links
 
 
-def classify_project_skill_links(project_root: Path, expected: dict[str, str]) -> dict[str, Any]:
-    """Classify each expected package link as present, missing, or colliding."""
-    root = project_root / PROJECT_SKILLS_SUBPATH
+def classify_project_links(
+    project_root: Path, expected: dict[str, str], component: str
+) -> dict[str, Any]:
+    """Classify expected links and obsolete symlinks previously managed here."""
+    subpath = CLI_LINK_SUBPATHS[component]
+    root = project_root / subpath
     present: list[str] = []
     missing: list[str] = []
     collisions: list[dict[str, str]] = []
+    stale: list[dict[str, str]] = []
     for name, target in expected.items():
         path = root / name
         if not path.is_symlink() and not path.exists():
@@ -189,7 +215,7 @@ def classify_project_skill_links(project_root: Path, expected: dict[str, str]) -
             )
             continue
         actual = os.readlink(path)
-        if actual == target and path.exists():
+        if actual == target:
             present.append(name)
         else:
             collisions.append(
@@ -199,20 +225,31 @@ def classify_project_skill_links(project_root: Path, expected: dict[str, str]) -
                     "resolved": actual,
                 }
             )
+    prefix = f"../../{SYMLINK_NAME}/{subpath}/"
+    if root.is_dir():
+        for entry in sorted(root.iterdir(), key=lambda path: path.name):
+            if entry.name in expected or not entry.is_symlink():
+                continue
+            target = os.readlink(entry)
+            if target.startswith(prefix):
+                stale.append({"name": entry.name, "target": target})
     return {
+        "component": component,
+        "subpath": subpath,
         "path": str(root),
         "expected": expected,
         "present": present,
         "missing": missing,
         "collisions": collisions,
+        "stale": stale,
     }
 
 
-def guard_project_skill_links(info: dict[str, Any]) -> None:
+def guard_project_links(info: dict[str, Any]) -> None:
     if not info["collisions"]:
         return
     detail = ", ".join(
-        f"{PROJECT_SKILLS_SUBPATH}/{item['name']} is a {item['state']}"
+        f"{info['subpath']}/{item['name']} is a {item['state']}"
         for item in info["collisions"]
     )
     raise SetupError(
@@ -221,22 +258,107 @@ def guard_project_skill_links(info: dict[str, Any]) -> None:
     )
 
 
-def create_project_skill_links(project_root: Path, info: dict[str, Any]) -> list[str]:
-    root = project_root / PROJECT_SKILLS_SUBPATH
+def create_project_links(project_root: Path, info: dict[str, Any]) -> list[str]:
+    root = project_root / info["subpath"]
     if info["missing"]:
         root.mkdir(parents=True, exist_ok=True)
     actions = []
     for name in info["missing"]:
         (root / name).symlink_to(info["expected"][name])
-        actions.append(f"skills: linked {PROJECT_SKILLS_SUBPATH}/{name}")
+        actions.append(f"{info['component']}: linked {info['subpath']}/{name}")
     return actions
 
 
+def remove_project_links(project_root: Path, info: dict[str, Any]) -> list[str]:
+    root = project_root / info["subpath"]
+    actions: list[str] = []
+    for item in info["stale"]:
+        path = root / item["name"]
+        path.unlink()
+        actions.append(f"{info['component']}: removed stale {info['subpath']}/{item['name']}")
+    return actions
+
+
+def strip_jsonc_comments(text: str) -> str:
+    """Remove line and block comments without changing quoted JSON strings."""
+    result: list[str] = []
+    index = 0
+    in_string = False
+    escaped = False
+    while index < len(text):
+        char = text[index]
+        if in_string:
+            result.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            index += 1
+            continue
+        if char == '"':
+            in_string = True
+            result.append(char)
+            index += 1
+            continue
+        if text.startswith("//", index):
+            index += 2
+            while index < len(text) and text[index] not in "\r\n":
+                index += 1
+            continue
+        if text.startswith("/*", index):
+            index += 2
+            while index < len(text) and not text.startswith("*/", index):
+                if text[index] in "\r\n":
+                    result.append(text[index])
+                index += 1
+            index += 2 if index < len(text) else 0
+            continue
+        result.append(char)
+        index += 1
+    return "".join(result)
+
+
+def strip_jsonc_trailing_commas(text: str) -> str:
+    """Remove commas immediately before closing object or array delimiters."""
+    result: list[str] = []
+    index = 0
+    in_string = False
+    escaped = False
+    while index < len(text):
+        char = text[index]
+        if in_string:
+            result.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            index += 1
+            continue
+        if char == '"':
+            in_string = True
+            result.append(char)
+            index += 1
+            continue
+        if char == ",":
+            lookahead = index + 1
+            while lookahead < len(text) and text[lookahead].isspace():
+                lookahead += 1
+            if lookahead < len(text) and text[lookahead] in "}]":
+                index += 1
+                continue
+        result.append(char)
+        index += 1
+    return "".join(result)
+
+
 def load_json_tolerant(path: Path) -> Any:
-    """Parse JSON, ignoring whole-line // comments. Raises on anything else."""
+    """Parse JSONC comments and trailing commas. Raises on invalid content."""
     text = path.read_text(encoding="utf-8")
-    stripped = "\n".join("" if LINE_COMMENT.match(line) else line for line in text.splitlines())
-    return json.loads(stripped)
+    return json.loads(strip_jsonc_trailing_commas(strip_jsonc_comments(text)))
 
 
 def read_registered_dirs(settings_path: Path) -> list[str]:
@@ -261,62 +383,126 @@ def stale_cli_registrations(settings_path: Path, source: Path) -> list[str]:
     ]
 
 
+def stale_global_agent_links(agents_dir: Path, source: Path) -> list[str]:
+    """Machine-wide ~/.copilot/agents links into the clone: loads them everywhere."""
+    if not agents_dir.is_dir():
+        return []
+    agents_root = os.path.realpath(source / ".github" / "agents")
+    stale: list[str] = []
+    for entry in sorted(agents_dir.iterdir(), key=lambda p: p.name):
+        if not entry.is_symlink():
+            continue
+        resolved = os.path.realpath(entry)
+        if resolved == agents_root or resolved.startswith(agents_root + os.sep):
+            stale.append(str(entry))
+    return stale
+
+
 def inspect_vscode_settings(
     project_root: Path, locations: dict[str, dict[str, bool]]
 ) -> dict[str, Any]:
-    """Classify settings.json and compute the entries still missing."""
+    """Classify settings.json and compute the entries still missing.
+
+    A JSONC file is parsed tolerantly so `missing_entries` names only what is
+    genuinely absent. It is still never rewritten: `json.dumps` would drop the
+    comments, so those merges stay manual.
+    """
     path = project_root / ".vscode" / "settings.json"
-    info: dict[str, Any] = {"path": str(path)}
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", ".vscode/settings.json"],
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+        check=False,
+    ).returncode == 0
+    info: dict[str, Any] = {"path": str(path), "tracked": tracked}
     if not path.is_file():
         info["state"] = "absent"
         info["missing_entries"] = locations
+        info["stale_entries"] = {}
         return info
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+        state = "strict-json"
     except json.JSONDecodeError:
-        info["state"] = "unparseable"
-        info["missing_entries"] = locations
-        info["reason"] = "not strict JSON (JSONC comments or trailing commas)"
-        return info
+        try:
+            data = load_json_tolerant(path)
+            state = "jsonc"
+        except json.JSONDecodeError:
+            info["state"] = "unparseable"
+            info["missing_entries"] = locations
+            info["stale_entries"] = {}
+            info["reason"] = "not strict JSON (JSONC comments or trailing commas)"
+            return info
     if not isinstance(data, dict):
         info["state"] = "unparseable"
         info["missing_entries"] = locations
+        info["stale_entries"] = {}
         info["reason"] = "top-level value is not an object"
         return info
 
     missing: dict[str, dict[str, bool]] = {}
-    for setting, entries in locations.items():
+    stale: dict[str, list[str]] = {}
+    for setting in LOCATION_SETTINGS.values():
+        entries = locations.get(setting, {})
         existing = data.get(setting)
         if existing is None:
-            missing[setting] = dict(entries)
+            if entries:
+                missing[setting] = dict(entries)
             continue
         if not isinstance(existing, dict):
             info["state"] = "unparseable"
             info["missing_entries"] = locations
+            info["stale_entries"] = {}
             info["reason"] = f"{setting} is not an object map from path to boolean"
             return info
-        absent = {location: True for location in entries if location not in existing}
+        absent = {
+            location: True
+            for location in entries
+            if existing.get(location) is not True
+        }
         if absent:
             missing[setting] = absent
-    info["state"] = "strict-json"
+        obsolete = [
+            location
+            for location in existing
+            if location.startswith(f"{SYMLINK_NAME}/.github/") and location not in entries
+        ]
+        if obsolete:
+            stale[setting] = obsolete
+    info["state"] = state
     info["missing_entries"] = missing
+    info["stale_entries"] = stale
+    if state == "jsonc":
+        info["reason"] = "JSONC comments; merge by hand to preserve them"
     return info
 
 
-def merge_vscode_settings(project_root: Path, missing: dict[str, dict[str, bool]]) -> list[str]:
+def reconcile_vscode_settings(
+    project_root: Path,
+    missing: dict[str, dict[str, bool]],
+    stale: dict[str, list[str]],
+) -> list[str]:
     path = project_root / ".vscode" / "settings.json"
     if path.is_file():
         data = json.loads(path.read_text(encoding="utf-8"))
     else:
         path.parent.mkdir(parents=True, exist_ok=True)
         data = {}
-    actions = []
+    actions: list[str] = []
+    for setting, locations in stale.items():
+        existing = data[setting]
+        for location in locations:
+            del existing[location]
+            actions.append(f"settings: removed {setting}[{location}]")
+        if not existing:
+            del data[setting]
     for setting, entries in missing.items():
         existing = data.setdefault(setting, {})
         for location in entries:
-            if location not in existing:
+            if existing.get(location) is not True:
                 existing[location] = True
-                actions.append(f"settings: added {setting}[{location}]")
+                actions.append(f"settings: enabled {setting}[{location}]")
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return actions
 
@@ -329,10 +515,12 @@ def exclude_path(project_root: Path) -> Path:
     return candidate
 
 
-def expected_exclude_rules(expected_links: dict[str, str]) -> list[str]:
-    return [EXCLUDE_RULE] + [
-        f"/{PROJECT_SKILLS_SUBPATH}/{name}" for name in expected_links
-    ]
+def expected_exclude_rules(links_by_component: dict[str, dict[str, str]]) -> list[str]:
+    rules = [EXCLUDE_RULE]
+    for component, expected in links_by_component.items():
+        subpath = CLI_LINK_SUBPATHS[component]
+        rules += [f"/{subpath}/{name}" for name in expected]
+    return rules
 
 
 def present_exclude_rules(path: Path) -> set[str]:
@@ -341,17 +529,58 @@ def present_exclude_rules(path: Path) -> set[str]:
     return {line.strip() for line in path.read_text(encoding="utf-8").splitlines()}
 
 
-def append_exclude_rules(path: Path, rules: Sequence[str]) -> list[str]:
-    present = present_exclude_rules(path)
-    pending = [rule for rule in rules if rule not in present]
-    if not pending:
-        return []
-    path.parent.mkdir(parents=True, exist_ok=True)
+def read_exclude_block(path: Path) -> tuple[str, str, list[str], str]:
     existing = path.read_text(encoding="utf-8") if path.is_file() else ""
-    prefix = "" if existing == "" or existing.endswith("\n") else "\n"
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(prefix + "".join(f"{rule}\n" for rule in pending))
-    return [f"exclude: appended {rule} to {path}" for rule in pending]
+    lines = existing.splitlines(keepends=True)
+    starts = [index for index, line in enumerate(lines) if line.strip() == EXCLUDE_BLOCK_START]
+    ends = [index for index, line in enumerate(lines) if line.strip() == EXCLUDE_BLOCK_END]
+    if len(starts) != len(ends) or len(starts) > 1 or (
+        starts and starts[0] >= ends[0]
+    ):
+        raise SetupError(
+            f"managed exclude block is malformed in {path}",
+            EXIT_COLLISION,
+        )
+
+    if starts:
+        start, end = starts[0], ends[0]
+        prefix = "".join(lines[:start])
+        suffix = "".join(lines[end + 1 :])
+        owned = [line.strip() for line in lines[start + 1 : end] if line.strip()]
+    else:
+        prefix = existing
+        suffix = ""
+        owned = []
+    return prefix, suffix, owned, existing
+
+
+def reconcile_exclude_rules(path: Path, desired: Sequence[str]) -> list[str]:
+    """Own only a delimited block, leaving identical pre-existing rules untouched."""
+    prefix, suffix, owned, existing = read_exclude_block(path)
+
+    unmanaged = {
+        line.strip()
+        for line in (prefix + suffix).splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    wanted = [rule for rule in desired if rule not in unmanaged]
+    block = ""
+    if wanted:
+        if prefix and not prefix.endswith("\n"):
+            prefix += "\n"
+        block = (
+            f"{EXCLUDE_BLOCK_START}\n"
+            + "".join(f"{rule}\n" for rule in wanted)
+            + f"{EXCLUDE_BLOCK_END}\n"
+        )
+    updated = prefix + block + suffix
+    if updated != existing:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(updated, encoding="utf-8")
+
+    actions = [f"exclude: removed {rule} from {path}" for rule in owned if rule not in wanted]
+    actions += [f"exclude: added {rule} to {path}" for rule in wanted if rule not in owned]
+    return actions
 
 
 def build_state(args: argparse.Namespace) -> dict[str, Any]:
@@ -360,12 +589,15 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
     present_roots = check_source(source)
     symlink = classify_symlink(project_root, source)
     locations = compute_locations(source)
-    expected_links = expected_project_skill_links(source)
-    skill_links = classify_project_skill_links(project_root, expected_links)
+    expected_links = {
+        component: expected_project_links(source, component) for component in CLI_LINK_SUBPATHS
+    }
     rules = expected_exclude_rules(expected_links)
-    present_rules = present_exclude_rules(exclude := exclude_path(project_root))
+    read_exclude_block(exclude := exclude_path(project_root))
+    present_rules = present_exclude_rules(exclude)
     settings_path = Path(args.copilot_settings).expanduser()
-    return {
+    agents_dir = Path(args.copilot_agents).expanduser()
+    state = {
         "project_root": str(project_root),
         "source": str(source),
         "component_roots_present": present_roots,
@@ -376,15 +608,19 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
             "rules": rules,
             "missing": [rule for rule in rules if rule not in present_rules],
         },
-        "project_skill_links": skill_links,
         "stale_cli_registrations": stale_cli_registrations(settings_path, source),
+        "stale_global_agent_links": stale_global_agent_links(agents_dir, source),
     }
+    for component, key in CLI_LINK_STATE_KEYS.items():
+        state[key] = classify_project_links(project_root, expected_links[component], component)
+    return state
 
 
 def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     state = build_state(args)
     guard_symlink(state["symlink"])
-    guard_project_skill_links(state["project_skill_links"])
+    for key in CLI_LINK_STATE_KEYS.values():
+        guard_project_links(state[key])
     settings = inspect_vscode_settings(Path(state["project_root"]), state["vscode_locations"])
     state["vscode_settings"] = settings
     state["mode"] = "check"
@@ -392,7 +628,9 @@ def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         state["symlink"]["state"] == "absent"
         or bool(state["git_exclude"]["missing"])
         or bool(settings.get("missing_entries"))
-        or bool(state["project_skill_links"]["missing"])
+        or bool(settings.get("stale_entries"))
+        or any(state[key]["missing"] for key in CLI_LINK_STATE_KEYS.values())
+        or any(state[key]["stale"] for key in CLI_LINK_STATE_KEYS.values())
     )
     state["status"] = "pending" if pending else "already-applied"
     return state, EXIT_OK
@@ -401,44 +639,123 @@ def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 def command_apply(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     state = build_state(args)
     guard_symlink(state["symlink"])
-    guard_project_skill_links(state["project_skill_links"])
+    for key in CLI_LINK_STATE_KEYS.values():
+        guard_project_links(state[key])
     project_root = Path(state["project_root"])
     source = Path(state["source"])
     actions: list[str] = []
+    settings = inspect_vscode_settings(project_root, state["vscode_locations"])
+    state["vscode_settings"] = settings
+    state["mode"] = "apply"
+    state["failures"] = []
+    settings_changes = bool(settings["missing_entries"] or settings["stale_entries"])
+
+    if settings["state"] not in MERGEABLE_SETTINGS_STATES and settings_changes:
+        state["actions"] = []
+        state["status"] = "needs-manual-settings-merge"
+        state["next_steps"] = [
+            f"Merge vscode_settings.missing_entries and remove "
+            f"vscode_settings.stale_entries in {settings['path']} by hand, "
+            "preserving comments and formatting."
+        ]
+        return state, EXIT_MANUAL_SETTINGS
+    if settings["tracked"] and settings_changes and not args.allow_tracked_settings:
+        state["actions"] = []
+        state["status"] = "needs-tracked-settings-approval"
+        state["next_steps"] = [
+            f"Re-run with --allow-tracked-settings to update {settings['path']}, "
+            "or merge the reported entries by hand."
+        ]
+        return state, EXIT_MANUAL_SETTINGS
 
     if state["symlink"]["state"] == "absent":
         (project_root / SYMLINK_NAME).symlink_to(source)
         actions.append(f"symlink: created {SYMLINK_NAME} -> {source}")
         state["symlink"] = classify_symlink(project_root, source)
 
-    actions += create_project_skill_links(project_root, state["project_skill_links"])
-    state["project_skill_links"] = classify_project_skill_links(
-        project_root, state["project_skill_links"]["expected"]
-    )
+    for component, key in CLI_LINK_STATE_KEYS.items():
+        actions += remove_project_links(project_root, state[key])
+        actions += create_project_links(project_root, state[key])
+        state[key] = classify_project_links(project_root, state[key]["expected"], component)
 
-    actions += append_exclude_rules(
+    actions += reconcile_exclude_rules(
         Path(state["git_exclude"]["path"]), state["git_exclude"]["rules"]
     )
     state["git_exclude"]["missing"] = []
 
-    settings = inspect_vscode_settings(project_root, state["vscode_locations"])
-    state["vscode_settings"] = settings
-    state["mode"] = "apply"
-    state["failures"] = []
+    if settings["state"] in MERGEABLE_SETTINGS_STATES and settings_changes:
+        actions += reconcile_vscode_settings(
+            project_root,
+            settings["missing_entries"],
+            settings["stale_entries"],
+        )
+    state["actions"] = actions
+    state["status"] = "applied"
+    return state, EXIT_OK
 
-    if settings["state"] == "unparseable":
-        state["actions"] = actions
+
+def command_unwire(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
+    project_root = resolve_project_root(args.project_root)
+    source = resolve_source(args.source)
+    symlink = classify_symlink(project_root, source)
+    removable_symlink = symlink["state"] in ("absent", "reuse") or (
+        symlink["state"] == "broken-symlink"
+        and symlink.get("resolved") == str(source)
+    )
+    if not removable_symlink:
+        guard_symlink(symlink)
+
+    links = {
+        component: classify_project_links(project_root, {}, component)
+        for component in CLI_LINK_SUBPATHS
+    }
+    exclude = exclude_path(project_root)
+    read_exclude_block(exclude)
+    settings = inspect_vscode_settings(project_root, {})
+    state: dict[str, Any] = {
+        "mode": "unwire",
+        "project_root": str(project_root),
+        "source": str(source),
+        "symlink": symlink,
+        "vscode_settings": settings,
+        "actions": [],
+    }
+    for component, key in CLI_LINK_STATE_KEYS.items():
+        state[key] = links[component]
+
+    settings_changes = bool(settings["stale_entries"])
+    if settings["state"] == "unparseable" or (
+        settings["state"] == "jsonc" and settings_changes
+    ):
         state["status"] = "needs-manual-settings-merge"
         state["next_steps"] = [
-            f"Merge vscode_settings.missing_entries into {settings['path']} by hand, "
-            "preserving comments and formatting. Each setting is an object mapping "
-            "each path to boolean true."
+            f"Remove vscode_settings.stale_entries from {settings['path']} by hand, "
+            "preserving comments and formatting."
+        ]
+        return state, EXIT_MANUAL_SETTINGS
+    if settings["tracked"] and settings_changes and not args.allow_tracked_settings:
+        state["status"] = "needs-tracked-settings-approval"
+        state["next_steps"] = [
+            f"Re-run with --allow-tracked-settings to update {settings['path']}, "
+            "or remove the reported entries by hand."
         ]
         return state, EXIT_MANUAL_SETTINGS
 
-    actions += merge_vscode_settings(project_root, settings["missing_entries"])
+    actions: list[str] = []
+    if settings["state"] == "strict-json" and settings_changes:
+        actions += reconcile_vscode_settings(project_root, {}, settings["stale_entries"])
+
+    for info in links.values():
+        actions += remove_project_links(project_root, info)
+    actions += reconcile_exclude_rules(exclude, [])
+
+    symlink_path = project_root / SYMLINK_NAME
+    if symlink_path.is_symlink():
+        symlink_path.unlink()
+        actions.append(f"symlink: removed {SYMLINK_NAME}")
+
     state["actions"] = actions
-    state["status"] = "applied"
+    state["status"] = "unwired"
     return state, EXIT_OK
 
 
@@ -488,15 +805,23 @@ def verify_vscode(state: dict[str, Any]) -> tuple[list[str], int]:
         return [f"top-level value in {path} is not an object"], 0
 
     configured = 0
-    for setting, entries in state["vscode_locations"].items():
+    for setting in LOCATION_SETTINGS.values():
+        entries = state["vscode_locations"].get(setting, {})
         actual = data.get(setting)
-        if not isinstance(actual, dict):
+        if entries and not isinstance(actual, dict):
             failures.append(f"{setting} is missing or not an object map from path to boolean")
+            continue
+        if not isinstance(actual, dict):
             continue
         for location in entries:
             if actual.get(location) is not True:
                 failures.append(f"{setting} missing enabled entry {location}")
         for location, enabled in actual.items():
+            if (
+                location.startswith(f"{SYMLINK_NAME}/.github/")
+                and location not in entries
+            ):
+                failures.append(f"{setting} has stale HVE-Core entry {location}")
             if enabled is not True:
                 continue
             configured += 1
@@ -507,19 +832,21 @@ def verify_vscode(state: dict[str, Any]) -> tuple[list[str], int]:
     return failures, configured
 
 
-def verify_project_skills(state: dict[str, Any]) -> tuple[list[str], int]:
+def verify_project_links(state: dict[str, Any], key: str) -> tuple[list[str], int]:
     project_root = Path(state["project_root"])
-    info = state["project_skill_links"]
-    failures = [
-        f"skill package not linked: {PROJECT_SKILLS_SUBPATH}/{name}" for name in info["missing"]
+    info = state[key]
+    component = info["component"]
+    subpath = info["subpath"]
+    failures = [f"{component} package not linked: {subpath}/{name}" for name in info["missing"]]
+    failures += [
+        f"{subpath}/{item['name']} is a {item['state']}" for item in info["collisions"]
     ]
     failures += [
-        f"{PROJECT_SKILLS_SUBPATH}/{item['name']} is a {item['state']}"
-        for item in info["collisions"]
+        f"stale {component} link: {subpath}/{item['name']}" for item in info["stale"]
     ]
 
     prefix = f"../../{SYMLINK_NAME}/"
-    root = project_root / PROJECT_SKILLS_SUBPATH
+    root = project_root / subpath
     for entry in sorted(root.iterdir(), key=lambda p: p.name) if root.is_dir() else []:
         if not entry.is_symlink():
             continue
@@ -528,10 +855,10 @@ def verify_project_skills(state: dict[str, Any]) -> tuple[list[str], int]:
             continue
         if EXPERIMENTAL in target.split("/"):
             failures.append(f"an experimental package is linked: {entry.name}")
-        elif entry.name in SKILL_ONLY_EXCLUDES:
+        elif component == "skills" and entry.name in SKILL_ONLY_EXCLUDES:
             failures.append(f"an excluded package is linked: {entry.name}")
         if not entry.exists():
-            failures.append(f"linked skill package is broken: {entry.name}")
+            failures.append(f"linked {component} package is broken: {entry.name}")
     return failures, len(info["present"])
 
 
@@ -547,11 +874,17 @@ def command_verify(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 
     vscode_failures, configured = verify_vscode(state)
     failures += vscode_failures
-    skill_failures, linked = verify_project_skills(state)
+    skill_failures, linked_skills = verify_project_links(state, CLI_LINK_STATE_KEYS["skills"])
     failures += skill_failures
+    agent_failures, linked_agents = verify_project_links(state, CLI_LINK_STATE_KEYS["agents"])
+    failures += agent_failures
     failures += [
         f"stale global CLI registration, run: copilot skill remove {directory}"
         for directory in state["stale_cli_registrations"]
+    ]
+    failures += [
+        f"agent linked machine-wide instead of per project, run: rm {path}"
+        for path in state["stale_global_agent_links"]
     ]
 
     missing_rules = state["git_exclude"]["missing"]
@@ -569,13 +902,19 @@ def command_verify(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 
     state["mode"] = "verify"
     state["configured_location_count"] = configured
-    state["linked_skill_package_count"] = linked
+    state["linked_skill_package_count"] = linked_skills
+    state["linked_agent_package_count"] = linked_agents
     state["failures"] = failures
     state["status"] = "verified" if not failures else "verification-failed"
     return state, EXIT_OK if not failures else EXIT_VERIFY_FAILED
 
 
-COMMANDS = {"check": command_check, "apply": command_apply, "verify": command_verify}
+COMMANDS = {
+    "check": command_check,
+    "apply": command_apply,
+    "unwire": command_unwire,
+    "verify": command_verify,
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -586,6 +925,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--source", default=None, help=f"HVE-Core clone path (default: {DEFAULT_SOURCE})"
     )
     parser.add_argument("--copilot-settings", default="~/.copilot/settings.json")
+    parser.add_argument("--copilot-agents", default=DEFAULT_COPILOT_AGENTS)
+    parser.add_argument(
+        "--allow-tracked-settings",
+        action="store_true",
+        help="allow apply or unwire to edit tracked .vscode/settings.json",
+    )
     return parser
 
 
