@@ -55,12 +55,38 @@ LOCATION_SETTINGS = {
     "hooks": "chat.hookFilesLocations",
 }
 
+
 class SetupError(Exception):
     """A gate failure that maps to a specific exit code."""
 
     def __init__(self, message: str, code: int) -> None:
         super().__init__(message)
         self.code = code
+
+
+def symlink_target_path(path: Path, target: str | Path | None = None) -> Path:
+    stored_target = Path(os.readlink(path) if target is None else target)
+    if stored_target.is_absolute():
+        return stored_target
+    return path.parent / stored_target
+
+
+def paths_match(left: str | Path, right: str | Path) -> bool:
+    try:
+        return os.path.samefile(left, right)
+    except OSError:
+        left_normalized = os.path.normcase(os.path.realpath(left))
+        right_normalized = os.path.normcase(os.path.realpath(right))
+        return left_normalized == right_normalized
+
+
+def path_is_within(path: str | Path, directory: str | Path) -> bool:
+    path_normalized = os.path.normcase(os.path.realpath(path))
+    directory_normalized = os.path.normcase(os.path.realpath(directory))
+    try:
+        return os.path.commonpath([path_normalized, directory_normalized]) == directory_normalized
+    except ValueError:
+        return False
 
 
 def run_git(arguments: list[str], cwd: Path) -> str:
@@ -118,12 +144,9 @@ def classify_symlink(project_root: Path, source: Path) -> dict[str, Any]:
         info["state"] = "absent"
         return info
     if path.is_symlink():
-        target = os.readlink(path)
-        resolved = Path(target)
-        if not resolved.is_absolute():
-            resolved = (path.parent / resolved).resolve()
+        resolved = Path(os.path.realpath(symlink_target_path(path)))
         info["resolved"] = str(resolved)
-        if resolved == source and path.exists():
+        if path.exists() and paths_match(path, source):
             info["state"] = "reuse"
             return info
         info["state"] = "broken-symlink" if not path.exists() else "symlink-mismatch"
@@ -202,6 +225,7 @@ def classify_project_links(
     root = project_root / subpath
     present: list[str] = []
     missing: list[str] = []
+    repairable: list[str] = []
     collisions: list[dict[str, str]] = []
     stale: list[dict[str, str]] = []
     for name, target in expected.items():
@@ -215,8 +239,11 @@ def classify_project_links(
             )
             continue
         actual = os.readlink(path)
-        if actual == target:
+        expected_path = symlink_target_path(path, target)
+        if path.exists() and paths_match(path, expected_path):
             present.append(name)
+        elif paths_match(symlink_target_path(path), expected_path):
+            repairable.append(name)
         else:
             collisions.append(
                 {
@@ -225,13 +252,13 @@ def classify_project_links(
                     "resolved": actual,
                 }
             )
-    prefix = f"../../{SYMLINK_NAME}/{subpath}/"
+    managed_root = project_root / SYMLINK_NAME / subpath
     if root.is_dir():
         for entry in sorted(root.iterdir(), key=lambda path: path.name):
             if entry.name in expected or not entry.is_symlink():
                 continue
             target = os.readlink(entry)
-            if target.startswith(prefix):
+            if path_is_within(symlink_target_path(entry), managed_root):
                 stale.append({"name": entry.name, "target": target})
     return {
         "component": component,
@@ -240,6 +267,7 @@ def classify_project_links(
         "expected": expected,
         "present": present,
         "missing": missing,
+        "repairable": repairable,
         "collisions": collisions,
         "stale": stale,
     }
@@ -260,12 +288,22 @@ def guard_project_links(info: dict[str, Any]) -> None:
 
 def create_project_links(project_root: Path, info: dict[str, Any]) -> list[str]:
     root = project_root / info["subpath"]
-    if info["missing"]:
+    names = [*info["missing"], *info["repairable"]]
+    if names:
         root.mkdir(parents=True, exist_ok=True)
-    actions = []
-    for name in info["missing"]:
-        (root / name).symlink_to(info["expected"][name])
-        actions.append(f"{info['component']}: linked {info['subpath']}/{name}")
+    actions: list[str] = []
+    repairable = set(info["repairable"])
+    for name in names:
+        path = root / name
+        if name in repairable:
+            path.unlink()
+        target = Path(info["expected"][name])
+        path.symlink_to(
+            target,
+            target_is_directory=symlink_target_path(path, target).is_dir(),
+        )
+        verb = "repaired" if name in repairable else "linked"
+        actions.append(f"{info['component']}: {verb} {info['subpath']}/{name}")
     return actions
 
 
@@ -379,7 +417,8 @@ def stale_cli_registrations(settings_path: Path, source: Path) -> list[str]:
     return [
         directory
         for directory in read_registered_dirs(settings_path)
-        if Path(directory) == skills_root or Path(directory).parent == skills_root
+        if paths_match(directory, skills_root)
+        or paths_match(Path(directory).parent, skills_root)
     ]
 
 
@@ -387,13 +426,12 @@ def stale_global_agent_links(agents_dir: Path, source: Path) -> list[str]:
     """Machine-wide ~/.copilot/agents links into the clone: loads them everywhere."""
     if not agents_dir.is_dir():
         return []
-    agents_root = os.path.realpath(source / ".github" / "agents")
+    agents_root = source / ".github" / "agents"
     stale: list[str] = []
     for entry in sorted(agents_dir.iterdir(), key=lambda p: p.name):
         if not entry.is_symlink():
             continue
-        resolved = os.path.realpath(entry)
-        if resolved == agents_root or resolved.startswith(agents_root + os.sep):
+        if path_is_within(entry, agents_root):
             stale.append(str(entry))
     return stale
 
@@ -630,6 +668,7 @@ def command_check(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         or bool(settings.get("missing_entries"))
         or bool(settings.get("stale_entries"))
         or any(state[key]["missing"] for key in CLI_LINK_STATE_KEYS.values())
+        or any(state[key]["repairable"] for key in CLI_LINK_STATE_KEYS.values())
         or any(state[key]["stale"] for key in CLI_LINK_STATE_KEYS.values())
     )
     state["status"] = "pending" if pending else "already-applied"
@@ -669,7 +708,7 @@ def command_apply(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return state, EXIT_MANUAL_SETTINGS
 
     if state["symlink"]["state"] == "absent":
-        (project_root / SYMLINK_NAME).symlink_to(source)
+        (project_root / SYMLINK_NAME).symlink_to(source, target_is_directory=True)
         actions.append(f"symlink: created {SYMLINK_NAME} -> {source}")
         state["symlink"] = classify_symlink(project_root, source)
 
@@ -700,7 +739,7 @@ def command_unwire(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     symlink = classify_symlink(project_root, source)
     removable_symlink = symlink["state"] in ("absent", "reuse") or (
         symlink["state"] == "broken-symlink"
-        and symlink.get("resolved") == str(source)
+        and paths_match(symlink.get("resolved", ""), source)
     )
     if not removable_symlink:
         guard_symlink(symlink)
@@ -786,7 +825,7 @@ def check_ignore_attribution(project_root: Path, expected: Path, target: str) ->
     resolved = Path(source_file)
     if not resolved.is_absolute():
         resolved = (project_root / resolved).resolve()
-    if resolved != expected:
+    if not paths_match(resolved, expected):
         return [f"{target} rule attributed to {resolved}, expected {expected}"]
     return []
 
@@ -839,26 +878,27 @@ def verify_project_links(state: dict[str, Any], key: str) -> tuple[list[str], in
     subpath = info["subpath"]
     failures = [f"{component} package not linked: {subpath}/{name}" for name in info["missing"]]
     failures += [
+        f"linked {component} package is broken: {name}" for name in info["repairable"]
+    ]
+    failures += [
         f"{subpath}/{item['name']} is a {item['state']}" for item in info["collisions"]
     ]
     failures += [
         f"stale {component} link: {subpath}/{item['name']}" for item in info["stale"]
     ]
 
-    prefix = f"../../{SYMLINK_NAME}/"
+    managed_root = project_root / SYMLINK_NAME
     root = project_root / subpath
     for entry in sorted(root.iterdir(), key=lambda p: p.name) if root.is_dir() else []:
         if not entry.is_symlink():
             continue
-        target = os.readlink(entry)
-        if not target.startswith(prefix):
+        target = symlink_target_path(entry)
+        if not path_is_within(target, managed_root):
             continue
-        if EXPERIMENTAL in target.split("/"):
+        if EXPERIMENTAL in target.parts:
             failures.append(f"an experimental package is linked: {entry.name}")
         elif component == "skills" and entry.name in SKILL_ONLY_EXCLUDES:
             failures.append(f"an excluded package is linked: {entry.name}")
-        if not entry.exists():
-            failures.append(f"linked {component} package is broken: {entry.name}")
     return failures, len(info["present"])
 
 

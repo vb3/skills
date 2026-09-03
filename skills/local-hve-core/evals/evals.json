@@ -161,6 +161,20 @@
         "Preserves project-owned skills, agents, settings, and unrelated exclude rules.",
         "Stops without mutation when JSONC needs a manual merge or tracked settings lack explicit approval."
       ]
+    },
+    {
+      "id": 13,
+      "prompt": "Repair this Windows project's local HVE-Core wiring. Verify says .hve-core resolves to a \\\\?\\-prefixed version of the requested drive path, and every project skill and agent link created by the previous run is broken.",
+      "expected_output": "The equivalent root link is reused, exact-target legacy project links are recreated with native Windows path syntax, and verification succeeds without weakening collision protection.",
+      "files": [],
+      "expectations": [
+        "Treats the \\\\?\\-prefixed root target and the requested drive path as the same filesystem location rather than a collision.",
+        "Repairs only broken project symlinks whose stored destinations are semantically identical to the generated HVE-Core targets.",
+        "Creates relative project links with native path syntax so skill directories, agent directories, and root agent files resolve on Windows.",
+        "Continues to block a symlink whose destination differs from the generated target.",
+        "Verification reports no broken managed links after repair.",
+        "A second apply run makes no changes."
+      ]
     }
   ]
 }

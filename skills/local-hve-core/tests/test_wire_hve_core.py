@@ -186,7 +186,7 @@ class CollisionTests(Harness):
         self.assertEqual(code, wire.EXIT_COLLISION)
         self.assertIn(str(other), state["error"])
         self.assertIn(str(self.source), state["error"])
-        self.assertEqual(os.readlink(self.project / ".hve-core"), str(other))
+        self.assertTrue(os.path.samefile(self.project / ".hve-core", other))
         self.assert_no_mutation()
 
     def test_broken_symlink_blocks(self) -> None:
@@ -228,7 +228,7 @@ class ApplyTests(Harness):
         self.assertEqual(state["status"], "applied")
         link = self.project / ".hve-core"
         self.assertTrue(link.is_symlink())
-        self.assertEqual(Path(os.readlink(link)), self.source)
+        self.assertTrue(os.path.samefile(link, self.source))
         exclude = self.project / ".git" / "info" / "exclude"
         self.assertIn(".hve-core", exclude.read_text(encoding="utf-8").splitlines())
         self.assertIn("chat.agentSkillsLocations", self.settings())
@@ -449,6 +449,18 @@ class ApplyTests(Harness):
         self.assertEqual(code, wire.EXIT_OK)
         self.assertEqual(state["symlink"]["state"], "reuse")
 
+    def test_apply_reuses_equivalent_symlink_target_spelling(self) -> None:
+        alias = self.root / "alias"
+        alias.mkdir()
+        equivalent_source = alias / ".." / self.source.name
+        os.symlink(equivalent_source, self.project / ".hve-core")
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertEqual(state["symlink"]["state"], "reuse")
+        self.assertTrue(os.path.samefile(self.project / ".hve-core", self.source))
+
     def test_apply_restores_missing_root_symlink_behind_managed_links(self) -> None:
         self.run_mode("apply")
         (self.project / ".hve-core").unlink()
@@ -482,10 +494,33 @@ class ProjectSkillLinkTests(Harness):
         self.run_mode("apply")
         rpi = self.links_dir() / "rpi"
         self.assertTrue(rpi.is_symlink())
-        self.assertEqual(os.readlink(rpi), "../../.hve-core/.github/skills/rpi")
+        self.assertEqual(
+            Path(os.readlink(rpi)),
+            Path("../../.hve-core/.github/skills/rpi"),
+        )
         self.assertTrue(rpi.is_dir(), "link must resolve through the .hve-core symlink")
         self.assertFalse((self.links_dir() / "installer").exists())
         self.assertFalse((self.links_dir() / "experimental").exists())
+
+    @unittest.skipUnless(os.name == "nt", "legacy malformed links are Windows-specific")
+    def test_apply_repairs_legacy_link_with_posix_separators(self) -> None:
+        (self.project / ".hve-core").symlink_to(
+            self.source,
+            target_is_directory=True,
+        )
+        link = self.links_dir() / "rpi"
+        link.parent.mkdir(parents=True)
+        link.symlink_to(
+            "../../.hve-core/.github/skills/rpi",
+            target_is_directory=True,
+        )
+        self.assertFalse(link.exists())
+
+        code, state = self.run_mode("apply")
+
+        self.assertEqual(code, wire.EXIT_OK)
+        self.assertTrue(link.is_dir())
+        self.assertTrue(any("repaired .github/skills/rpi" in action for action in state["actions"]))
 
     def test_links_are_excluded_from_git(self) -> None:
         self.run_mode("apply")
@@ -554,7 +589,8 @@ class ProjectAgentLinkTests(Harness):
         package = self.links_dir() / "accessibility"
         self.assertTrue(package.is_symlink())
         self.assertEqual(
-            os.readlink(package), "../../.hve-core/.github/agents/accessibility"
+            Path(os.readlink(package)),
+            Path("../../.hve-core/.github/agents/accessibility"),
         )
         self.assertTrue(package.is_dir(), "link must resolve through the .hve-core symlink")
         self.assertFalse((self.links_dir() / "experimental").exists())
@@ -564,8 +600,8 @@ class ProjectAgentLinkTests(Harness):
         link = self.links_dir() / "dependency-reviewer.agent.md"
         self.assertTrue(link.is_symlink())
         self.assertEqual(
-            os.readlink(link),
-            "../../.hve-core/.github/agents/dependency-reviewer.agent.md",
+            Path(os.readlink(link)),
+            Path("../../.hve-core/.github/agents/dependency-reviewer.agent.md"),
         )
         self.assertTrue(link.is_file())
 
