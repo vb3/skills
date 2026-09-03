@@ -28,7 +28,7 @@ python3 "<skill-directory>/scripts/wire_hve_core.py" <check|apply|unwire|verify>
 | Mode | Effect |
 | --- | --- |
 | `check` | Read-only. Reports current state and everything still pending |
-| `apply` | Creates the symlinks, appends the exclude rules, and merges `.vscode/settings.json` |
+| `apply` | Creates or repairs managed symlinks, appends exclude rules, and merges `.vscode/settings.json` |
 | `unwire` | Removes only the project-local HVE-Core wiring created by this script |
 | `verify` | Read-only. Asserts the finished state and lists every failure |
 
@@ -148,9 +148,10 @@ Two mechanisms surface the components, both scoped to the project:
   `.github/agents/` untouched. The script links only names supplied by
   HVE-Core, and treats an existing project-owned path with the same name as a
   collision.
-- Never replace an existing file, directory, broken symlink, or mismatched
-  symlink without explicit approval. Collision detection happens before every
-  mutation.
+- Preserve existing files, directories, and mismatched symlinks as collisions.
+  The only repairable existing path is a broken project symlink whose stored
+  destination is semantically identical to the exact generated HVE-Core
+  target; `apply` recreates that managed link with native path syntax.
 - Do not reimplement the script's logic in prose or ad hoc shell. If its
   behavior is wrong, change the script and its tests.
 - The `installer` and `experimental` packages are out of scope. Never configure
