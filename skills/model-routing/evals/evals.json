@@ -3,261 +3,247 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "I'm about to fan out six subagents to migrate six independent modules from Newtonsoft.Json to System.Text.Json. Each module has full test coverage. Pick the model and reasoning effort for the workers and for the agent that reviews the combined result before I open the PR.",
-      "expected_output": "Efficient tier at high effort for the six workers because the test suite is the verification gate, and the frontier tier without downshifting for the reviewer.",
+      "prompt": "Autonomously select models, without dispatching, for six independent Newtonsoft.Json-to-System.Text.Json migration workers and a final reviewer. Existing behavioral tests cover each migration, but converter, naming-policy, and null-handling differences make the work non-mechanical. The current model is Astra, no family or objective was selected, and the host supports Luna and Sol with low through max effort.",
+      "expected_output": "Disclose OpenAI and cost defaults, use Luna workers with the test gate, and use Sol for final judgment.",
       "files": [],
       "expectations": [
-        "Routes the six workers to gpt-5.6-luna rather than the frontier tier, citing that fan-out multiplies cost.",
-        "Names the existing test coverage as the verification gate that makes the downshift safe.",
-        "Chooses high rather than low effort for the workers, on the basis that the work is mechanical but needs deliberation, not judgment.",
-        "Refuses to downshift the reviewer and routes it to gpt-5.6-sol.",
-        "Does not ask the user for permission before choosing models."
+        "States that OpenAI and cost are applied defaults.",
+        "Selects Luna at medium or high effort for the workers and names the behavioral tests as the gate.",
+        "Selects Sol for the final reviewer.",
+        "Does not dispatch agents."
       ]
     },
     {
       "id": 2,
-      "prompt": "What model should I use to write an ADR for how we'll handle multi-tenant data isolation in this customer's platform?",
-      "expected_output": "Frontier tier at high effort, justified in one line, with one cheaper alternative and its precondition.",
+      "prompt": "What model should I use for this implementation? I have not chosen OpenAI or Claude, or cost versus latency. Both choices would change my decision. Grade only the next reply.",
+      "expected_output": "Ask only for the missing family.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol at high effort.",
-        "Justifies high effort by the combination of ambiguity, consequence, and the difficulty of reversing an architectural decision.",
-        "Answers in roughly one line rather than presenting the full routing matrix.",
-        "Offers exactly one cheaper alternative with the condition under which it would suffice.",
-        "Does not recommend xhigh or max as a starting point."
+        "Asks whether the user wants OpenAI or Claude.",
+        "Does not also ask cost versus latency in this reply.",
+        "Does not choose a model or present the full matrix."
       ]
     },
     {
       "id": 3,
-      "prompt": "I read a good writeup a couple of months ago that said GPT-5.6 Terra at medium is the best cost-performance worker configuration for agent pipelines. Should I standardize my subagents on that?",
-      "expected_output": "A correction: the advice predates the 2026-07-30 price cut, and Terra now sits off the cost-quality frontier that Luna and Sol jointly define.",
+      "prompt": "Prior turn: you asked which model family I want, and I answered Claude. Cost versus latency remains unspecified and would change the implementation route. Grade only the next reply.",
+      "expected_output": "Ask only for the remaining optimization preference.",
       "files": [],
       "expectations": [
-        "Identifies that the recommendation is stale because of the 2026-07-30 price change, not because it was wrong when written.",
-        "States that Luna dropped roughly 80% and Terra roughly 20%, putting Terra off the cost-quality frontier that Sol and Luna jointly define.",
-        "Recommends a barbell of Sol for judgment work and Luna for verifiable work instead of standardizing on Terra.",
-        "Notes that a measured eval on the user's own workload beats this general claim.",
-        "Does not simply agree with the premise."
+        "Asks whether to optimize for cost or latency.",
+        "Retains the already supplied Claude family.",
+        "Does not select a model yet."
       ]
     },
     {
       "id": 4,
-      "prompt": "My subagent produced a beautifully reasoned, well-tested implementation of a caching layer. Problem is I wanted request coalescing, not caching. It was on Luna at medium. Should I bump it to xhigh and rerun?",
-      "expected_output": "No. This is a judgment failure, so the fix is a tier change or a better prompt, not more effort.",
+      "prompt": "Explain how HTTP request coalescing differs from caching. I am not asking about AI models or agent configuration.",
+      "expected_output": "Answer the software question without invoking the routing questionnaire.",
       "files": [],
       "expectations": [
-        "Diagnoses solving the wrong problem as a judgment failure rather than a deliberation failure.",
-        "States explicitly that raising reasoning effort will not fix it and will produce a more thorough wrong answer.",
-        "Checks whether the prompt actually specified request coalescing before recommending any model change.",
-        "If the prompt was adequate, recommends moving up a tier to gpt-5.6-sol rather than raising effort.",
-        "Does not recommend xhigh."
+        "Explains request coalescing versus caching.",
+        "Does not ask for a model family or optimization goal.",
+        "Does not recommend a model or effort."
       ]
     },
     {
       "id": 5,
-      "prompt": "I've been in a Codex session with Sol for about two hours. It's started contradicting decisions we made earlier, and it keeps re-fixing the same file in ways that undo previous work. I've bumped it from medium to high and it got worse. What now?",
-      "expected_output": "Long-session drift. Compact or split the session; do not escalate effort, which consumes more of the context window.",
+      "prompt": "Show the four OpenAI and Claude role counterparts, including Astra and Fable. Are the paired models equivalent?",
+      "expected_output": "List all four role pairs and deny metric equivalence.",
       "files": [],
       "expectations": [
-        "Identifies this as the documented long-session drift pattern rather than a capability problem.",
-        "Explains that higher effort spends more of the context window on reasoning tokens and can make drift worse.",
-        "Recommends compacting history, restating objective and constraints, or splitting into fresh bounded subtasks.",
-        "Mentions that Codex applies a lower effective context limit than the API.",
-        "Recommends returning to medium effort rather than escalating further."
+        "Pairs Luna with Haiku 4.5, Terra with Sonnet 5, Sol with Opus 5, and Astra with Fable 5.1.",
+        "Calls them role counterparts rather than equal-performance models."
       ]
     },
     {
       "id": 6,
-      "prompt": "My interactive coding loop is taking 40 seconds per turn on Sol high and it's breaking my flow. I don't want to lose answer quality. What do I change?",
-      "expected_output": "Work the levers in order. With no quality-preserving speed lever available, either round trips and output length absorb the 40 seconds or the work does not belong in an interactive turn at that quality bar.",
+      "prompt": "family=openai, optimize_for=cost. Choose a model for a consequential multi-tenant isolation ADR. All OpenAI candidates are available, no workload measurements exist, and an independent security architect will review the isolation invariants.",
+      "expected_output": "Use provisional Sol high with the independent review as the gate.",
       "files": [],
       "expectations": [
-        "Identifies 40 seconds as far past the roughly 10 second interactive ceiling, so the task is misrouted for its latency class.",
-        "Checks whether serial tool round trips or output length dominate the turn before recommending a model or effort change.",
-        "States that the interactive class caps effort at medium, so Sol at high is misrouted for this loop whatever the routing table would otherwise start at.",
-        "Does not offer fast mode or any other paid speed tier, since none is reachable from this harness.",
-        "States that if cutting round trips and caching do not close the gap, the remaining honest options are lowering effort or moving the work off the interactive path."
+        "Recommends Sol at high effort.",
+        "Names the independent isolation review as the gate.",
+        "Labels the choice provisional rather than a measured cost winner.",
+        "Does not select Astra solely because it is newer."
       ]
     },
     {
       "id": 7,
-      "prompt": "To save money, I want to move the agent that writes our customer-facing runbooks from Sol down to Luna. There's no test suite, obviously. Do it.",
-      "expected_output": "Refuse the downshift, because no verification gate exists and the output is customer-facing.",
+      "prompt": "family=claude, optimize_for=cost. Choose workers for 40 bounded C# fixes. Each has a clear patch specification, an existing reproduction test, regression tests, and an independent Opus reviewer. The host exposes Haiku as claude-haiku-4.5 with no effort control, plus Sonnet and Opus.",
+      "expected_output": "Start Haiku workers without inventing an effort control.",
       "files": [],
       "expectations": [
-        "Declines to downshift and names the absence of a verification gate as the reason.",
-        "Notes that customer-facing output is a stakes modifier that pushes effort up, not down.",
-        "Offers the alternative of a cheap generator plus a frontier reviewer, and explains that this is often cheaper than the frontier tier doing the whole task.",
-        "Does not comply solely because the user asked directly.",
-        "Does not suggest that saving cost is inherently wrong, only that this particular downshift is unguarded."
+        "Selects claude-haiku-4.5 for the bounded workers.",
+        "Names the tests and independent reviewer as gates.",
+        "Omits reasoning effort for Haiku.",
+        "Stays within Claude."
       ]
     },
     {
       "id": 8,
-      "prompt": "I have 40 GitHub issues in a mature C# repo, each a well-described bug with a reproduction. I want an agent to work through them producing PRs. Which model, and does it matter that we're an OpenAI-first shop?",
-      "expected_output": "This is the named non-OpenAI escape hatch: classic repository-issue patching is where Claude's Opus-class flagship leads.",
+      "prompt": "family=openai, optimize_for=latency. Our assistant requires at least 95% accepted answers. Same-host end-to-end measurements including retries: Luna medium 84% and p95 4s; Terra medium 97% and p95 6s; Sol medium 98% and p95 9s. Cost is not limiting.",
+      "expected_output": "Choose Terra medium as the fastest measured configuration above the floor.",
       "files": [],
       "expectations": [
-        "Recognizes single-issue repository patching as the SWE-Bench-shaped workload where Claude Opus 5 leads.",
-        "Presents the OpenAI-first default and the specific condition under which it is overridden, rather than switching vendors casually.",
-        "Notes that the SWE-Bench comparison is a third-party result and that Sol's exact figure is not vendor-confirmed.",
-        "Weighs the cost of switching harnesses against the expected gain.",
-        "Still gives a concrete OpenAI answer for the case where the user stays on OpenAI."
+        "Selects Terra at medium effort.",
+        "Rejects Luna because it misses the acceptance floor.",
+        "Uses end-to-end accepted-result latency rather than throughput.",
+        "Does not override the supplied measurement with a general cost prior."
       ]
     },
     {
       "id": 9,
-      "prompt": "I set context_tier to long_context on all my subagents so they never run out of room. Reasonable default?",
-      "expected_output": "No. long_context is a capacity setting, not a quality setting, and wide context usually loses to narrow context on the same budget.",
+      "prompt": "family=claude, optimize_for=latency. Haiku misses the quality floor in our interactive assistant. Opus high passes but is too slow. We control the Claude API and have no Sonnet measurements yet. What should we try?",
+      "expected_output": "Trial Sonnet with explicit effort and the existing quality gate.",
       "files": [],
       "expectations": [
-        "States that long_context is not a quality setting and should be used only when input genuinely exceeds the default window.",
-        "Warns that it wastes budget and can dilute attention across irrelevant material.",
-        "Suggests splitting into bounded subtasks with a synthesis step as the usual better answer.",
-        "Does not recommend long_context as a general safety margin."
+        "Recommends a Sonnet 5 trial.",
+        "Treats the chosen effort as an explicit trial rather than an inherited Claude API default.",
+        "Requires measuring accepted-result latency and quality.",
+        "Does not present Sonnet as already validated."
       ]
     },
     {
       "id": 10,
-      "prompt": "Design the model assignment for a pipeline: one agent decomposes a feature request into tasks, eight agents implement tasks in parallel against a spec with acceptance tests, and one agent merges and validates. Cost is a real constraint here.",
-      "expected_output": "Frontier tier for the orchestrator and the final merger, efficient tier for the eight workers, with the acceptance tests named as the gate.",
+      "prompt": "family=openai, optimize_for=latency. In representative full-workflow runs with the same gate, Sol high and Astra high both pass. P95 accepted completion is eight hours on Sol and five hours on Astra, including tools and recovery. Astra's higher bill is approved, and our Responses integration supports async tools.",
+      "expected_output": "Choose Astra high from the measured completion-time result.",
       "files": [],
       "expectations": [
-        "Routes the decomposition agent to gpt-5.6-sol at medium or higher and explains that plan errors propagate to every worker.",
-        "Routes the eight parallel implementers to gpt-5.6-luna and names the acceptance tests as the verification gate.",
-        "Refuses to downshift the final merge and validation agent.",
-        "Explicitly states that if all eight workers genuinely needed frontier judgment, the decomposition is wrong.",
-        "Gives relative cost reasoning rather than inventing precise dollar figures."
+        "Selects Astra at high effort.",
+        "Grounds the choice in five versus eight hours to accepted completion.",
+        "Does not claim that selecting Astra alone supplies application-side async tool support.",
+        "Does not generalize this result to short chat turns."
       ]
     },
     {
       "id": 11,
-      "prompt": "Give me the right reasoning effort for a security review of an authentication middleware we're shipping to a customer. It can run overnight.",
-      "expected_output": "Frontier tier at xhigh, one of the few cases where xhigh is the documented starting point.",
+      "prompt": "family=openai, optimize_for=cost. Sol high and Astra high both satisfy the same long-workflow gate. Total bills per accepted result, including retries, tools, cache charges, and review, are $2.40 on Sol and $1.80 on Astra. Both meet the deadline.",
+      "expected_output": "Choose Astra high from measured accepted-result cost.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol at xhigh.",
-        "Justifies xhigh by the combination of an adversarial task, exhaustive search paying off, and no latency budget.",
-        "Cites that security and code review is an officially named xhigh use case, and that GPT-5.6 showed unusually large gains on cybersecurity benchmarks.",
-        "Does not jump straight to max.",
-        "Recognizes that the security review row already prices in the stakes, so the customer-facing modifier is not applied a second time and the answer stays at xhigh."
+        "Selects Astra at high effort.",
+        "Uses $1.80 versus $2.40 per accepted result.",
+        "Does not substitute lower token price for measured total cost.",
+        "Limits the conclusion to the supplied workflow."
       ]
     },
     {
       "id": 12,
-      "prompt": "My agent loop makes about 200 API calls an hour with a big stable system prompt and tool list. Costs are triple what I modeled. Model or effort problem?",
-      "expected_output": "Probably neither. On GPT-5.6, cache writes cost 1.25x input, so an unmarked dynamic suffix pays the write premium every turn without ever reading the cache.",
+      "prompt": "family=openai, optimize_for=cost. We plan hundreds of agentic jobs lasting several hours. Sol and Astra both support the requirements, but we have no task-level quality, cost, or latency measurements. Should duration alone make Astra the standard?",
+      "expected_output": "Use a bounded Sol pilot and evaluate Astra before scaling.",
       "files": [],
       "expectations": [
-        "Identifies prompt caching configuration as the likely cause before recommending a model or effort change.",
-        "Explains that GPT-5.6 charges 1.25x for cache writes, unlike earlier models where writes were free.",
-        "Recommends an explicit cache breakpoint after the stable prefix, prompt_cache_options mode explicit, and a stable prompt_cache_key.",
-        "Recommends comparing cache_write_tokens against cached_tokens as the diagnostic.",
-        "Does not immediately recommend downshifting the model."
+        "Does not treat duration alone as requiring Astra.",
+        "Recommends a bounded Sol pilot with an acceptance gate.",
+        "Recommends comparing Astra before scaling.",
+        "Does not claim either unmeasured model is a proven winner."
       ]
     },
     {
       "id": 13,
-      "prompt": "One of eight parallel workers is applying a schema migration that ships to a customer. It's a throwaway spike branch, but the migration hits production data. Walk me through exactly which modifiers apply and what you end up with.",
-      "expected_output": "Modifier resolution per axis: at most one tier shift and one effort shift, no compounding, and the tier downshift blocked because production data has no adequate gate.",
+      "prompt": "family=openai, optimize_for=cost. I explicitly choose Luna to draft customer runbooks. They remain unpublished, and no independent reviewer or correctness checks exist. Honor the choice and explain the state of the result.",
+      "expected_output": "Honor Luna while clearly marking the drafts unverified.",
       "files": [],
       "expectations": [
-        "Applies at most one tier shift and one effort shift rather than stacking every modifier that nominally matches.",
-        "Recognizes that the throwaway and fan-out modifiers both point the same direction and counts them once, taking the strongest rather than compounding.",
-        "Refuses the tier downshift because a migration against production data has no verification gate that catches the error class, and states that the throwaway framing does not waive the gate requirement.",
-        "Requires an approval gate before the destructive write.",
-        "Does not produce an effort level above max or a tier below the efficient tier."
+        "Retains the explicit Luna choice.",
+        "States that no qualifying gate exists.",
+        "Identifies what remains unverified before publication.",
+        "Does not claim the drafts are ready for customer use."
       ]
     },
     {
       "id": 14,
-      "prompt": "My Luna workers have passed their test suites on 30 consecutive tasks and the reviewer has never flagged anything. Safe to drop them to low effort and skip the reviewer?",
-      "expected_output": "A silent gate is ambiguous evidence, so this justifies a monitored trial one step cheaper on a single axis at most, and the reviewer should be validated rather than removed.",
+      "prompt": "family=claude, optimize_for=latency. Fable and Opus high both pass the same independent reference checks. Measured p95 accepted completion is four hours on Fable and six on Opus. The host exposes only Opus, Sonnet, and Haiku.",
+      "expected_output": "Use validated Opus high and report unavailable Fable.",
       "files": [],
       "expectations": [
-        "States that a gate which never fires is equally consistent with the model succeeding, the task being easy, and the gate being ineffective.",
-        "Declines to treat the clean record as proof that the cheaper setting is safe.",
-        "Recommends validating the gate, for example by feeding it a known-bad input or checking it has caught real failures before.",
-        "Permits a monitored trial of lower effort while keeping the reviewer, rather than making both changes at once.",
-        "Warns that passing tests is not the same as correct tests."
+        "Selects the available Opus high configuration.",
+        "Names the independent checks as the fallback justification.",
+        "States that the faster measured Fable route is unavailable.",
+        "Does not invent Fable availability or switch vendors."
       ]
     },
     {
       "id": 15,
-      "prompt": "I am in VS Code using runSubagent. Dispatch a bounded RPI Planner worker whose edits will be checked by the primary planner and then a frontier critique. Pick the worker model and effort, and give me the exact runSubagent model value.",
-      "expected_output": "Efficient tier at medium effort for the bounded planning worker, encoded as the VS Code display name GPT-5.6 Luna (copilot), with effort identified as selected but not enforceable through the current runSubagent schema.",
+      "prompt": "family=claude, optimize_for=latency. Fable is the only model that passes the required independent gate. Opus, Sonnet, and Haiku fail it. The host does not expose Fable, and OpenAI is not authorized. Give the safe routing decision and the minimum next step that could unblock it.",
+      "expected_output": "Report that no available authorized route clears the floor.",
       "files": [],
       "expectations": [
-        "Routes the bounded worker to the efficient tier because the primary-planner check and independent frontier critique are explicit verification gates.",
-        "Selects medium effort for planning rather than silently dropping the effort decision.",
-        "Uses the exact runSubagent display name GPT-5.6 Luna (copilot), not the API or CLI ID gpt-5.6-luna.",
-        "States that the current runSubagent schema does not expose a reasoning-effort field, so the selected effort is not host-enforced.",
-        "Does not claim that adding effort wording to the worker prompt is equivalent to a harness reasoning-effort control."
+        "Reports a blocker rather than a successful route.",
+        "Does not fall back to Opus below the quality floor.",
+        "Does not invent Fable availability or cross to OpenAI.",
+        "Names approved Fable access or changed requirements as possible resolutions."
       ]
     },
     {
       "id": 16,
-      "prompt": "I'm building an interactive code-explanation panel. Luna's answers aren't good enough, it misses nuance that users then ask follow-ups about, but Sol at high effort is slow enough that people give up waiting. Cost genuinely isn't my constraint here, I have budget. Should I put Terra in the middle?",
-      "expected_output": "No. Lower Sol's effort instead. Latency is roughly tokens divided by rate, and effort moves the token count, so Sol at a lower effort is both faster and better than Terra.",
+      "prompt": "family=openai, optimize_for=cost. Give the supported routing fields followed by one concise routing note, without dispatching. A bounded planning worker has a qualified primary planner and an independent critique. This runSubagent fixture accepts model labels 'GPT-5.6 Luna (copilot)' and 'GPT-5.6 Sol (copilot)' but exposes no effort or context fields.",
+      "expected_output": "Use the verified Luna display label and mark effort unenforced.",
       "files": [],
       "expectations": [
-        "Declines to route to gpt-5.6-terra.",
-        "Explains that wall clock is roughly output tokens divided by token rate, so lowering Sol's effort buys back speed the same way lowering it buys back cost.",
-        "Cites that Sol at medium is both faster and better than Terra at xhigh, so the balanced tier is enclosed on latency as well as on cost.",
-        "Recommends Sol at medium or below, which the interactive class requires anyway.",
-        "Attacks time to first token with prompt caching on the stable prefix rather than looking for a paid speed tier."
+        "Uses GPT-5.6 Luna (copilot), not an API ID.",
+        "Names the two reviews as the gate.",
+        "Marks intended medium effort as unenforced.",
+        "Does not emit unsupported fields or dispatch."
       ]
     },
     {
       "id": 17,
-      "prompt": "For our interactive assistant I want to switch from Luna to Gemini 3.7 Flash. It benchmarks at around 340 tokens per second, more than double Luna. That should roughly halve our response times, right?",
-      "expected_output": "No. Tokens per second is not latency, and Flash's time to first token is reported as high enough that Luna wins decisively on short interactive turns.",
+      "prompt": "family=openai, optimize_for=cost. A GPT-5.6 loop has a stable system/tool prefix, implicit caching, and a changing suffix. The bill is three times an estimate based on uncached Standard input, but no per-call usage breakdown exists. Is the suffix definitely causing full cache writes with no reuse?",
+      "expected_output": "Refuse the unsupported cache diagnosis and inspect actual usage.",
       "files": [],
       "expectations": [
-        "Rejects the premise that higher tokens per second implies lower response time.",
-        "States that time to first token dominates perceived latency for short turns, and that Gemini Flash's reported TTFT is roughly ten seconds against Luna's under half a second.",
-        "Works the crossover explicitly: Luna wins on short responses, and Flash only wins total wall clock once responses reach thousands of tokens.",
-        "Concludes that Gemini Flash is a throughput pick for long generations or batch pipelines rather than an interactive latency pick.",
-        "Flags that published TTFT figures for Flash conflict across sources rather than presenting one number as settled."
+        "States that implicit caching can reuse an earlier matching prefix despite a changing suffix.",
+        "Explains that a 1.25x write rate alone cannot create a 3x total bill under the stated comparison.",
+        "Requests input, cache-read, cache-write, output, retry, and service/context-tier usage.",
+        "Does not immediately reroute the model."
       ]
     },
     {
       "id": 18,
-      "prompt": "My agent takes about 3 minutes per task on Luna at medium. I want to switch to something faster. Each task makes roughly 40 tool calls, mostly file reads that it issues one at a time.",
-      "expected_output": "The loop is round-trip bound, not model bound. Parallelize the reads; there is also no faster tier to switch to, since Luna is already the fastest.",
+      "prompt": "family=openai, optimize_for=latency. A trace shows a 180-second Luna task spends 120 seconds on 40 independent file reads issued serially and 60 seconds on everything else. Should we switch models first?",
+      "expected_output": "Target the measured serial-tool bottleneck first.",
       "files": [],
       "expectations": [
-        "Identifies serial tool round trips as the dominant contributor to wall clock rather than token generation.",
-        "Points out that Luna is already the fastest tier available, so there is no faster model to switch to within the OpenAI ladder.",
-        "Recommends issuing the independent file reads in parallel, noting reported reductions up to 90% on tool-heavy work.",
-        "Declines the model switch as the first move and asks where the time is actually going.",
-        "Does not recommend lowering reasoning effort as the primary fix for a round-trip-bound loop."
+        "Identifies serial independent reads as the dominant wait.",
+        "Recommends batching or parallelizing those reads.",
+        "Does not promise a fixed gain or start with a model switch."
       ]
     },
     {
       "id": 19,
-      "prompt": "I need to run a 4,000-case regression eval through a model overnight. I was going to put it on Luna at low effort to keep the bill down. Reasonable?",
-      "expected_output": "Establish the actual deadline first. If there is genuine slack this is the batch class, and the Batch API's 50% discount is the cost lever instead of suppressing effort.",
+      "prompt": "family=openai, optimize_for=cost. Sol is contradicting earlier decisions and undoing fixes in a long Codex session. Raising effort did not help. What should I inspect before changing models?",
+      "expected_output": "Repair goals and context before treating the failure as model incapacity.",
       "files": [],
       "expectations": [
-        "Asks what deadline the run actually has to hit rather than treating 'overnight' as equivalent to having no latency budget.",
-        "Warns that the Batch API's 24 hour turnaround ceiling can miss a next-morning deadline, so it fits only if there is real slack.",
-        "Recommends the Batch API's 50% discount as the correct cost lever for work that does have slack.",
-        "States that effort should be set by what the eval is meant to measure rather than suppressed to control cost.",
-        "Warns that if the eval is measuring production behavior, the configuration under test must match production rather than being chosen for cost."
+        "Recommends restoring the objective, constraints, and acceptance criteria.",
+        "Recommends supported compaction or bounded fresh subtasks.",
+        "Does not prescribe further effort escalation.",
+        "Does not invent a fixed turn count for context drift."
       ]
     },
     {
       "id": 20,
-      "prompt": "Our overnight security reviews take too long to finish. I want to move them from Sol to Terra because Terra is faster.",
-      "expected_output": "Refuse Terra. The balanced tier is enclosed on latency as well as cost, so if wall clock has to be traded at all, it is traded by lowering Sol's effort, not by changing tier.",
+      "prompt": "family=claude, optimize_for=cost. We control the Claude API and have three days of slack. One workload classifies independent documents; another requires client tools between every model response. Can Message Batches automatically make both entire workflows 50% cheaper and guarantee overnight completion?",
+      "expected_output": "Apply batch to supported independent requests, not automatically to a dependent loop.",
       "files": [],
       "expectations": [
-        "Refuses the move to gpt-5.6-terra and states that the balanced tier is off the joint frontier on latency as well as on cost.",
-        "Explains that Sol at a lower effort buys more wall clock than Terra does, so the balanced tier is not the way to spend a latency budget.",
-        "Establishes what deadline the review has to hit before trading any quality for speed, rather than accepting 'too long' as a specification.",
-        "Keeps security review on the frontier tier at xhigh per the routing table, and treats moving the work off the critical path as preferable to running a degraded review.",
-        "Does not accept 'it is faster' as sufficient justification for routing to the balanced tier."
+        "Identifies the supported batch discount for independent requests.",
+        "Recommends batching the document classifications.",
+        "Explains that client-tool rounds still need orchestration.",
+        "Accounts for processing windows, failures, result collection, and retries rather than guaranteeing completion."
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "family=openai, optimize_for=cost. On this hypothetical request-based host plan, Luna and Sol each consume one allowance unit per request regardless of tokens. On the same bounded task and gate, Luna needs three requests per accepted result and Sol needs one. Which is cheaper?",
+      "expected_output": "Choose Sol from the supplied host billing regime.",
+      "files": [],
+      "expectations": [
+        "Selects Sol based on one allowance unit versus three.",
+        "Uses the supplied host billing rules rather than API token prices.",
+        "Does not generalize request-based billing to every host."
       ]
     }
   ]
