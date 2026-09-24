@@ -3,261 +3,409 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "I'm about to fan out six subagents to migrate six independent modules from Newtonsoft.Json to System.Text.Json. Each module has full test coverage. Pick the model and reasoning effort for the workers and for the agent that reviews the combined result before I open the PR.",
-      "expected_output": "Efficient tier at high effort for the six workers because the test suite is the verification gate, and the frontier tier without downshifting for the reviewer.",
+      "prompt": "Recommend models and efforts for six independent JSON-library migrations and a final reviewer. GPT-6 Sol and Luna are available through Copilot. Existing acceptance tests independently cover serialization compatibility. This is background work; I review the final result. Give recommendations, not dispatches.",
+      "expected_output": "GPT-6 Luna high for bounded workers; GPT-6 Sol high for consequential final code review.",
       "files": [],
       "expectations": [
-        "Routes the six workers to gpt-5.6-luna rather than the frontier tier, citing that fan-out multiplies cost.",
-        "Names the existing test coverage as the verification gate that makes the downshift safe.",
-        "Chooses high rather than low effort for the workers, on the basis that the work is mechanical but needs deliberation, not judgment.",
-        "Refuses to downshift the reviewer and routes it to gpt-5.6-sol.",
-        "Does not ask the user for permission before choosing models."
+        "Recommends gpt-6-luna at high effort for the workers and names the compatibility tests as the gate.",
+        "Recommends gpt-6-sol at high effort for the reviewer.",
+        "Does not claim a fixed cost multiplier or guaranteed savings for worker-plus-reviewer.",
+        "Does not dispatch agents or change configuration."
       ]
     },
     {
       "id": 2,
-      "prompt": "What model should I use to write an ADR for how we'll handle multi-tenant data isolation in this customer's platform?",
-      "expected_output": "Frontier tier at high effort, justified in one line, with one cheaper alternative and its precondition.",
+      "prompt": "Which model should write our multi-tenant data-isolation ADR? Copilot offers GPT-6 Sol and Luna; Astra is not available. The design is ambiguous, durable, and difficult to reverse. I will review it.",
+      "expected_output": "GPT-6 Sol high, without stacking all three stakes into max.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol at high effort.",
-        "Justifies high effort by the combination of ambiguity, consequence, and the difficulty of reversing an architectural decision.",
-        "Answers in roughly one line rather than presenting the full routing matrix.",
-        "Offers exactly one cheaper alternative with the condition under which it would suffice.",
-        "Does not recommend xhigh or max as a starting point."
+        "Recommends gpt-6-sol at high effort.",
+        "Explains that architectural judgment and missed edge cases matter.",
+        "Does not compound the overlapping stakes into xhigh or max.",
+        "Does not recommend unavailable Astra or print the entire routing matrix."
       ]
     },
     {
       "id": 3,
-      "prompt": "I read a good writeup a couple of months ago that said GPT-5.6 Terra at medium is the best cost-performance worker configuration for agent pipelines. Should I standardize my subagents on that?",
-      "expected_output": "A correction: the advice predates the 2026-07-30 price cut, and Terra now sits off the cost-quality frontier that Luna and Sol jointly define.",
+      "prompt": "Recommend a model for difficult cross-repo architecture synthesis. My Copilot picker offers gpt-6-astra and gpt-6-sol, both with high effort. In a same-harness pilot Astra caught two independently confirmed architectural errors Sol missed. Latency is not the constraint. Our teammate cannot access Astra.",
+      "expected_output": "Astra high for the demonstrated quality gain, with Sol high as the teammate's access fallback.",
       "files": [],
       "expectations": [
-        "Identifies that the recommendation is stale because of the 2026-07-30 price change, not because it was wrong when written.",
-        "States that Luna dropped roughly 80% and Terra roughly 20%, putting Terra off the cost-quality frontier that Sol and Luna jointly define.",
-        "Recommends a barbell of Sol for judgment work and Luna for verifiable work instead of standardizing on Terra.",
-        "Notes that a measured eval on the user's own workload beats this general claim.",
-        "Does not simply agree with the premise."
+        "Recommends gpt-6-astra at high effort based on the supplied comparison.",
+        "Explicitly gives gpt-6-sol at high effort as the no-Astra fallback.",
+        "Preserves an independent architecture review gate for either model.",
+        "Does not assert universal Astra superiority or infer its price or context size."
       ]
     },
     {
       "id": 4,
-      "prompt": "My subagent produced a beautifully reasoned, well-tested implementation of a caching layer. Problem is I wanted request coalescing, not caching. It was on Luna at medium. Should I bump it to xhigh and rerun?",
-      "expected_output": "No. This is a judgment failure, so the fix is a tier change or a better prompt, not more effort.",
+      "prompt": "I want a broadly reusable difficult-debugging recommendation. Available models are gpt-6-sol and gpt-6-luna with low through max effort. Astra is absent. We have no reproduction yet. Should the recommendation require Astra because it is newest?",
+      "expected_output": "No; Sol high is the usable default, and Astra is an optional evidence-backed candidate.",
       "files": [],
       "expectations": [
-        "Diagnoses solving the wrong problem as a judgment failure rather than a deliberation failure.",
-        "States explicitly that raising reasoning effort will not fix it and will produce a more thorough wrong answer.",
-        "Checks whether the prompt actually specified request coalescing before recommending any model change.",
-        "If the prompt was adequate, recommends moving up a tier to gpt-5.6-sol rather than raising effort.",
-        "Does not recommend xhigh."
+        "Recommends gpt-6-sol at high effort rather than blocking on Astra.",
+        "Does not invent a way to access Astra or alias gpt-6 to it.",
+        "Separates model availability from comparative quality evidence.",
+        "Keeps finding a reproduction and checking the root cause in the workflow."
       ]
     },
     {
       "id": 5,
-      "prompt": "I've been in a Codex session with Sol for about two hours. It's started contradicting decisions we made earlier, and it keeps re-fixing the same file in ways that undo previous work. I've bumped it from medium to high and it got worse. What now?",
-      "expected_output": "Long-session drift. Compact or split the session; do not escalate effort, which consumes more of the context window.",
+      "prompt": "An explicitly selected gpt-6-astra high read-only synthesis call returned '403 model not enabled'. The host offers gpt-6-sol with high and long_context; both match the task requirements. What fallback should be used?",
+      "expected_output": "Report the access failure and substitute compatible Sol, without dropping effort or repeating Astra.",
       "files": [],
       "expectations": [
-        "Identifies this as the documented long-session drift pattern rather than a capability problem.",
-        "Explains that higher effort spends more of the context window on reasoning tokens and can make drift worse.",
-        "Recommends compacting history, restating objective and constraints, or splitting into fresh bounded subtasks.",
-        "Mentions that Codex applies a lower effective context limit than the API.",
-        "Recommends returning to medium effort rather than escalating further."
+        "Names gpt-6-sol as the availability fallback.",
+        "Preserves high effort and the required context support.",
+        "Reports the substitution rather than claiming Astra ran.",
+        "Does not treat a 403 as a reasoning failure or retry the same unavailable model."
       ]
     },
     {
       "id": 6,
-      "prompt": "My interactive coding loop is taking 40 seconds per turn on Sol high and it's breaking my flow. I don't want to lose answer quality. What do I change?",
-      "expected_output": "Work the levers in order. With no quality-preserving speed lever available, either round trips and output length absorb the 40 seconds or the work does not belong in an interactive turn at that quality bar.",
+      "prompt": "Recommend routes for an architecture owner and bounded implementation workers. This Copilot account offers only gpt-5.6-sol and gpt-5.6-luna, each with high and medium effort. Worker outputs have independent acceptance tests. None of the GPT-6 models is enabled.",
+      "expected_output": "Use the older compatible Sol/Luna candidates, clearly labeled as availability fallbacks.",
       "files": [],
       "expectations": [
-        "Identifies 40 seconds as far past the roughly 10 second interactive ceiling, so the task is misrouted for its latency class.",
-        "Checks whether serial tool round trips or output length dominate the turn before recommending a model or effort change.",
-        "States that the interactive class caps effort at medium, so Sol at high is misrouted for this loop whatever the routing table would otherwise start at.",
-        "Does not offer fast mode or any other paid speed tier, since none is reachable from this harness.",
-        "States that if cutting round trips and caching do not close the gap, the remaining honest options are lowering effort or moving the work off the interactive path."
+        "Recommends gpt-5.6-sol high for the architecture owner.",
+        "Recommends gpt-5.6-luna high for the checked workers.",
+        "Identifies these as availability fallbacks rather than claiming they are GPT-6 equivalents.",
+        "Does not introduce Claude, an unavailable model, or an invented alias."
       ]
     },
     {
       "id": 7,
-      "prompt": "To save money, I want to move the agent that writes our customer-facing runbooks from Sol down to Luna. There's no test suite, obviously. Do it.",
-      "expected_output": "Refuse the downshift, because no verification gate exists and the output is customer-facing.",
+      "prompt": "Our human-blocking Copilot explanation panel spends most of its 30 seconds generating a response on gpt-6-sol medium. The picker also exposes gpt-5.6-sol-fast, with medium effort. A same-prompt pilot meets our answer-quality gate and reduces p95 to 8 seconds at an acceptable observed Copilot charge. What should we recommend, including for users without the fast model?",
+      "expected_output": "Recommend the exposed Sol Fast model for this measured latency win, with GPT-6 Sol as the compatible fallback.",
       "files": [],
       "expectations": [
-        "Declines to downshift and names the absence of a verification gate as the reason.",
-        "Notes that customer-facing output is a stakes modifier that pushes effort up, not down.",
-        "Offers the alternative of a cheap generator plus a frontier reviewer, and explains that this is often cheaper than the frontier tier doing the whole task.",
-        "Does not comply solely because the user asked directly.",
-        "Does not suggest that saving cost is inherently wrong, only that this particular downshift is unguarded."
+        "Recommends gpt-5.6-sol-fast at medium effort for the measured workload.",
+        "Includes gpt-6-sol at medium as the unavailable-fast fallback and notes the fallback is not guaranteed to meet 8 seconds.",
+        "Does not claim fast controls are universally unavailable.",
+        "Does not encode service_tier or invent gpt-6-sol-fast."
       ]
     },
     {
       "id": 8,
-      "prompt": "I have 40 GitHub issues in a mature C# repo, each a well-described bug with a reproduction. I want an agent to work through them producing PRs. Which model, and does it matter that we're an OpenAI-first shop?",
-      "expected_output": "This is the named non-OpenAI escape hatch: classic repository-issue patching is where Claude's Opus-class flagship leads.",
+      "prompt": "The only fact I have about gpt-5.6-sol-fast is that it appears in the Copilot model list. Can I advertise it as exactly GPT-6 Sol quality at 2.5x speed and 2x price, using an OpenAI fast-service-tier blog as evidence?",
+      "expected_output": "No; model identity, quality, speed, and Copilot price each need applicable evidence.",
       "files": [],
       "expectations": [
-        "Recognizes single-issue repository patching as the SWE-Bench-shaped workload where Claude Opus 5 leads.",
-        "Presents the OpenAI-first default and the specific condition under which it is overridden, rather than switching vendors casually.",
-        "Notes that the SWE-Bench comparison is a third-party result and that Sol's exact figure is not vendor-confirmed.",
-        "Weighs the cost of switching harnesses against the expected gain.",
-        "Still gives a concrete OpenAI answer for the case where the user stays on OpenAI."
+        "Rejects transferring API service-tier figures to the Copilot -fast model.",
+        "Distinguishes GPT-5.6 Sol Fast from GPT-6 Sol.",
+        "Requires provider-specific evidence or a same-workload comparison for the numerical claims.",
+        "Still allows Sol Fast as a candidate rather than banning it."
       ]
     },
     {
       "id": 9,
-      "prompt": "I set context_tier to long_context on all my subagents so they never run out of room. Reasonable default?",
-      "expected_output": "No. long_context is a capacity setting, not a quality setting, and wide context usually loses to narrow context on the same budget.",
+      "prompt": "Routing fixture, not a claim about real prices: our Copilot bill is token-based. For a representative accepted task, gpt-6-sol costs 8 credits and claude-opus-5 costs 20, including retries. Both pass the same quality gate. A separate direct-API benchmark has Claude cheaper. Which default should we use in Copilot?",
+      "expected_output": "OpenAI Sol under the actual Copilot economics, not the unrelated API benchmark.",
       "files": [],
       "expectations": [
-        "States that long_context is not a quality setting and should be used only when input genuinely exceeds the default window.",
-        "Warns that it wastes budget and can dilute attention across irrelevant material.",
-        "Suggests splitting into bounded subtasks with a synthesis step as the usual better answer.",
-        "Does not recommend long_context as a general safety margin."
+        "Recommends gpt-6-sol for this Copilot workload.",
+        "Uses the supplied Copilot cost per accepted result rather than direct-API prices.",
+        "Does not claim all OpenAI models are universally cheaper than all Claude models.",
+        "Does not reinterpret credits as premium-request multipliers."
       ]
     },
     {
       "id": 10,
-      "prompt": "Design the model assignment for a pipeline: one agent decomposes a feature request into tasks, eight agents implement tasks in parallel against a spec with acceptance tests, and one agent merges and validates. Cost is a real constraint here.",
-      "expected_output": "Frontier tier for the orchestrator and the final merger, efficient tier for the eight workers, with the acceptance tests named as the gate.",
+      "prompt": "Billing fixture: this legacy plan charges one premium request per Sol call regardless of effort. A direct Sol high solution passes in one call. A Luna worker plus Sol reviewer costs 0.5 plus 1 request and also passes. Both meet latency. Is worker-plus-reviewer cheaper because high effort has a 1.75x token multiplier?",
+      "expected_output": "No; the one-call route costs 1 request versus 1.5, and a fixed effort-token multiplier is inapplicable.",
       "files": [],
       "expectations": [
-        "Routes the decomposition agent to gpt-5.6-sol at medium or higher and explains that plan errors propagate to every worker.",
-        "Routes the eight parallel implementers to gpt-5.6-luna and names the acceptance tests as the verification gate.",
-        "Refuses to downshift the final merge and validation agent.",
-        "Explicitly states that if all eight workers genuinely needed frontier judgment, the decomposition is wrong.",
-        "Gives relative cost reasoning rather than inventing precise dollar figures."
+        "Computes 1 request for the direct route and 1.5 for worker-plus-reviewer.",
+        "Rejects the purported fixed 1.75x effort-cost multiplier.",
+        "Respects the fixture's billing regime instead of substituting current token billing.",
+        "Separates latency and quality considerations from the stated request cost."
       ]
     },
     {
       "id": 11,
-      "prompt": "Give me the right reasoning effort for a security review of an authentication middleware we're shipping to a customer. It can run overnight.",
-      "expected_output": "Frontier tier at xhigh, one of the few cases where xhigh is the documented starting point.",
+      "prompt": "I have 40 well-described C# repository issues with reproductions and independent acceptance tests. GPT-6 Sol and Luna are available through Copilot. Should we automatically choose Claude because an old SWE-Bench comparison preferred Opus for repository patching?",
+      "expected_output": "No automatic Claude override; checked Luna workers with Sol judgment/review is the OpenAI-first starting route.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol at xhigh.",
-        "Justifies xhigh by the combination of an adversarial task, exhaustive search paying off, and no latency budget.",
-        "Cites that security and code review is an officially named xhigh use case, and that GPT-5.6 showed unusually large gains on cybersecurity benchmarks.",
-        "Does not jump straight to max.",
-        "Recognizes that the security review row already prices in the stakes, so the customer-facing modifier is not applied a second time and the answer stays at xhigh."
+        "Keeps an OpenAI-first recommendation with GPT-6 Luna for bounded fixes and GPT-6 Sol for judgment or final review.",
+        "Names the acceptance tests as the worker verification gate.",
+        "Does not transfer old cross-harness benchmark rankings to current models.",
+        "Allows a Claude switch if a representative comparison or required capability justifies it."
       ]
     },
     {
       "id": 12,
-      "prompt": "My agent loop makes about 200 API calls an hour with a big stable system prompt and tool list. Costs are triple what I modeled. Model or effort problem?",
-      "expected_output": "Probably neither. On GPT-5.6, cache writes cost 1.25x input, so an unmarked dynamic suffix pays the write premium every turn without ever reading the cache.",
+      "prompt": "For this advisory routing answer, explicitly choose claude-opus-5 for a required independent-family critique of an OpenAI-authored architecture. It is enabled and supports high effort. The normal provider preference is OpenAI.",
+      "expected_output": "Honor the explicit independent-family requirement rather than applying OpenAI preference as a prohibition.",
       "files": [],
       "expectations": [
-        "Identifies prompt caching configuration as the likely cause before recommending a model or effort change.",
-        "Explains that GPT-5.6 charges 1.25x for cache writes, unlike earlier models where writes were free.",
-        "Recommends an explicit cache breakpoint after the stable prefix, prompt_cache_options mode explicit, and a stable prompt_cache_key.",
-        "Recommends comparing cache_write_tokens against cached_tokens as the diagnostic.",
-        "Does not immediately recommend downshifting the model."
+        "Recommends claude-opus-5 at high effort.",
+        "Explains the independent-family requirement as the exception.",
+        "Does not replace the requested model with Sol or Astra.",
+        "Does not imply changing any persistent host defaults."
       ]
     },
     {
       "id": 13,
-      "prompt": "One of eight parallel workers is applying a schema migration that ships to a customer. It's a throwaway spike branch, but the migration hits production data. Walk me through exactly which modifiers apply and what you end up with.",
-      "expected_output": "Modifier resolution per axis: at most one tier shift and one effort shift, no compounding, and the tier downshift blocked because production data has no adequate gate.",
+      "prompt": "A Luna implementation is well tested but implements caching when I wanted request coalescing. Should I rerun at max?",
+      "expected_output": "Clarify the missing or misunderstood intent; effort alone is not the remedy.",
       "files": [],
       "expectations": [
-        "Applies at most one tier shift and one effort shift rather than stacking every modifier that nominally matches.",
-        "Recognizes that the throwaway and fan-out modifiers both point the same direction and counts them once, taking the strongest rather than compounding.",
-        "Refuses the tier downshift because a migration against production data has no verification gate that catches the error class, and states that the throwaway framing does not waive the gate requirement.",
-        "Requires an approval gate before the destructive write.",
-        "Does not produce an effort level above max or a tier below the efficient tier."
+        "Checks whether request coalescing was actually specified.",
+        "Does not recommend max as the first fix.",
+        "Recommends a judgment-capable Sol candidate if an adequate prompt was still misunderstood.",
+        "Explains why tests derived from the same misunderstanding are not an independent gate."
       ]
     },
     {
       "id": 14,
-      "prompt": "My Luna workers have passed their test suites on 30 consecutive tasks and the reviewer has never flagged anything. Safe to drop them to low effort and skip the reviewer?",
-      "expected_output": "A silent gate is ambiguous evidence, so this justifies a monitored trial one step cheaper on a single axis at most, and the reviewer should be validated rather than removed.",
+      "prompt": "After a two-hour Codex session Sol is contradicting earlier decisions and undoing its own fixes. Raising effort from medium to high did not help. What now? I have not supplied this Codex installation's context limit.",
+      "expected_output": "Repair context and checkpoints, not an assumed numeric context limit or another effort increase.",
       "files": [],
       "expectations": [
-        "States that a gate which never fires is equally consistent with the model succeeding, the task being easy, and the gate being ineffective.",
-        "Declines to treat the clean record as proof that the cheaper setting is safe.",
-        "Recommends validating the gate, for example by feeding it a known-bad input or checking it has caught real failures before.",
-        "Permits a monitored trial of lower effort while keeping the reviewer, rather than making both changes at once.",
-        "Warns that passing tests is not the same as correct tests."
+        "Recommends restating the objective and constraints, compacting, or fresh bounded subtasks.",
+        "Does not fabricate a Codex token limit or a fixed number of exchanges before drift.",
+        "Does not prescribe another effort increase to fix the drift.",
+        "Separates product context limits from vendor API limits."
       ]
     },
     {
       "id": 15,
-      "prompt": "I am in VS Code using runSubagent. Dispatch a bounded RPI Planner worker whose edits will be checked by the primary planner and then a frontier critique. Pick the worker model and effort, and give me the exact runSubagent model value.",
-      "expected_output": "Efficient tier at medium effort for the bounded planning worker, encoded as the VS Code display name GPT-5.6 Luna (copilot), with effort identified as selected but not enforceable through the current runSubagent schema.",
+      "prompt": "Give a model-routing recommendation for a bounded VS Code planning worker. Schema fixture: runSubagent accepts only model and prompt; model choices are exactly 'GPT-6 Luna (copilot)' and 'GPT-6 Sol (copilot)'. The parent planner and independent Sol review check the worker's section. Give the exact model value and whether effort can be enforced.",
+      "expected_output": "Use the supplied Luna display name, with medium as an unenforced effort recommendation.",
       "files": [],
       "expectations": [
-        "Routes the bounded worker to the efficient tier because the primary-planner check and independent frontier critique are explicit verification gates.",
-        "Selects medium effort for planning rather than silently dropping the effort decision.",
-        "Uses the exact runSubagent display name GPT-5.6 Luna (copilot), not the API or CLI ID gpt-5.6-luna.",
-        "States that the current runSubagent schema does not expose a reasoning-effort field, so the selected effort is not host-enforced.",
-        "Does not claim that adding effort wording to the worker prompt is equivalent to a harness reasoning-effort control."
+        "Uses the exact model value GPT-6 Luna (copilot).",
+        "Recommends medium effort for bounded planning.",
+        "States that this supplied tool schema cannot enforce effort.",
+        "Does not invent a reasoning_effort field or claim prompt wording is equivalent."
       ]
     },
     {
       "id": 16,
-      "prompt": "I'm building an interactive code-explanation panel. Luna's answers aren't good enough, it misses nuance that users then ask follow-ups about, but Sol at high effort is slow enough that people give up waiting. Cost genuinely isn't my constraint here, I have budget. Should I put Terra in the middle?",
-      "expected_output": "No. Lower Sol's effort instead. Latency is roughly tokens divided by rate, and effort moves the token count, so Sol at a lower effort is both faster and better than Terra.",
+      "prompt": "Produce a task-tool call shape, without actually dispatching. Host fixture: /subagents resolves model, effort, and context; the tool instruction permits overrides only if the current user request or persistent instructions explicitly require values. The underlying request is merely 'run the tests'. There is no explicit model, effort, or context requirement.",
+      "expected_output": "Omit all three overrides and preserve the host defaults.",
       "files": [],
       "expectations": [
-        "Declines to route to gpt-5.6-terra.",
-        "Explains that wall clock is roughly output tokens divided by token rate, so lowering Sol's effort buys back speed the same way lowering it buys back cost.",
-        "Cites that Sol at medium is both faster and better than Terra at xhigh, so the balanced tier is enclosed on latency as well as on cost.",
-        "Recommends Sol at medium or below, which the interactive class requires anyway.",
-        "Attacks time to first token with prompt caching on the stable prefix rather than looking for a paid speed tier."
+        "Omits model, reasoning_effort, and context_tier from the proposed task arguments.",
+        "Does not treat the skill's preferred Luna route as authorization to override /subagents.",
+        "Does not claim to know which model the host will run.",
+        "Does not actually dispatch an agent."
       ]
     },
     {
       "id": 17,
-      "prompt": "For our interactive assistant I want to switch from Luna to Gemini 3.7 Flash. It benchmarks at around 340 tokens per second, more than double Luna. That should roughly halve our response times, right?",
-      "expected_output": "No. Tokens per second is not latency, and Flash's time to first token is reported as high enough that Luna wins decisively on short interactive turns.",
+      "prompt": "We requested Astra with long_context for a synthesis whose required input cannot currently be split without losing cross-document relationships. Astra is unavailable. The only remaining model is gpt-5-mini, and the supplied host contract says it cannot fit the input or use long_context. Can we silently fall back to it?",
+      "expected_output": "Report no compatible fallback; expose the context blocker instead of losing input.",
       "files": [],
       "expectations": [
-        "Rejects the premise that higher tokens per second implies lower response time.",
-        "States that time to first token dominates perceived latency for short turns, and that Gemini Flash's reported TTFT is roughly ten seconds against Luna's under half a second.",
-        "Works the crossover explicitly: Luna wins on short responses, and Flash only wins total wall clock once responses reach thousands of tokens.",
-        "Concludes that Gemini Flash is a throughput pick for long generations or batch pipelines rather than an interactive latency pick.",
-        "Flags that published TTFT figures for Flash conflict across sources rather than presenting one number as settled."
+        "Declines the silent fallback because the remaining model violates the context requirement.",
+        "Does not send unsupported long_context or silently truncate evidence.",
+        "Reports the blocker and the need for a compatible model or a revised task boundary.",
+        "Does not assert that Sol is available in this fixture."
       ]
     },
     {
       "id": 18,
-      "prompt": "My agent takes about 3 minutes per task on Luna at medium. I want to switch to something faster. Each task makes roughly 40 tool calls, mostly file reads that it issues one at a time.",
-      "expected_output": "The loop is round-trip bound, not model bound. Parallelize the reads; there is also no faster tier to switch to, since Luna is already the fastest.",
+      "prompt": "Sol at xhigh was justified by our adversarial eval. A provider outage leaves only a model whose tool schema supports low, medium, and high. Can we copy xhigh to the fallback or silently clamp it to high?",
+      "expected_output": "Re-evaluate compatibility; neither an unsupported parameter nor an undisclosed quality downgrade is valid.",
       "files": [],
       "expectations": [
-        "Identifies serial tool round trips as the dominant contributor to wall clock rather than token generation.",
-        "Points out that Luna is already the fastest tier available, so there is no faster model to switch to within the OpenAI ladder.",
-        "Recommends issuing the independent file reads in parallel, noting reported reductions up to 90% on tool-heavy work.",
-        "Declines the model switch as the first move and asks where the time is actually going.",
-        "Does not recommend lowering reasoning effort as the primary fix for a round-trip-bound loop."
+        "Does not send unsupported xhigh.",
+        "Does not silently claim high preserves the evaluated xhigh behavior.",
+        "Requires a compatible candidate or an explicit re-evaluation of the quality bar.",
+        "Distinguishes a service outage from a reasoning-quality failure."
       ]
     },
     {
       "id": 19,
-      "prompt": "I need to run a 4,000-case regression eval through a model overnight. I was going to put it on Luna at low effort to keep the bill down. Reasonable?",
-      "expected_output": "Establish the actual deadline first. If there is genuine slack this is the batch class, and the Batch API's 50% discount is the cost lever instead of suppressing effort.",
+      "prompt": "Luna takes three minutes for a task with 40 file reads issued serially. We have no per-stage timings or comparative model measurements. Should we switch models first?",
+      "expected_output": "Measure and reduce serial round trips before assuming model throughput is the problem.",
       "files": [],
       "expectations": [
-        "Asks what deadline the run actually has to hit rather than treating 'overnight' as equivalent to having no latency budget.",
-        "Warns that the Batch API's 24 hour turnaround ceiling can miss a next-morning deadline, so it fits only if there is real slack.",
-        "Recommends the Batch API's 50% discount as the correct cost lever for work that does have slack.",
-        "States that effort should be set by what the eval is meant to measure rather than suppressed to control cost.",
-        "Warns that if the eval is measuring production behavior, the configuration under test must match production rather than being chosen for cost."
+        "Identifies serial reads as a likely bottleneck and recommends parallel independent reads.",
+        "Requests or instruments per-stage timing before ranking replacement models.",
+        "Does not claim Luna is the fastest available model.",
+        "Does not promise a fixed percentage latency reduction."
       ]
     },
     {
       "id": 20,
-      "prompt": "Our overnight security reviews take too long to finish. I want to move them from Sol to Terra because Terra is faster.",
-      "expected_output": "Refuse Terra. The balanced tier is enclosed on latency as well as cost, so if wall clock has to be traded at all, it is traded by lowering Sol's effort, not by changing tier.",
+      "prompt": "An API regression eval must finish by 9 a.m., eight hours from now. The endpoint's Batch API documentation says up to 24 hours. It measures our production Sol high behavior. Should I call it batch work and switch to Luna low to save money?",
+      "expected_output": "The batch turnaround does not satisfy the deadline, and the production configuration must remain the subject of the eval.",
       "files": [],
       "expectations": [
-        "Refuses the move to gpt-5.6-terra and states that the balanced tier is off the joint frontier on latency as well as on cost.",
-        "Explains that Sol at a lower effort buys more wall clock than Terra does, so the balanced tier is not the way to spend a latency budget.",
-        "Establishes what deadline the review has to hit before trading any quality for speed, rather than accepting 'too long' as a specification.",
-        "Keeps security review on the frontier tier at xhigh per the routing table, and treats moving the work off the critical path as preferable to running a degraded review.",
-        "Does not accept 'it is faster' as sufficient justification for routing to the balanced tier."
+        "States that a 24-hour turnaround cannot guarantee the eight-hour deadline.",
+        "Keeps Sol high to measure production behavior.",
+        "Does not treat Copilot background execution as use of an API Batch endpoint.",
+        "Separates scheduling and pricing from the configuration being evaluated."
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "Choose effort for a background security review using available GPT-6 Sol. It ships to a customer, but I review the result. We have no evidence yet that xhigh beats high for this workload.",
+      "expected_output": "Start at high and evaluate any xhigh escalation, without inferring effort gains from a generational benchmark.",
+      "files": [],
+      "expectations": [
+        "Recommends gpt-6-sol at high effort as the initial route.",
+        "Treats xhigh as a trial justified by deeper coverage rather than mandatory for all security work.",
+        "Does not compound customer exposure into max.",
+        "Does not cite a between-model benchmark as proof of a within-model effort gain."
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "An Astra agent might have submitted a support ticket just before the connection failed. Sol is available as fallback. Should we redispatch the same submit instruction now?",
+      "expected_output": "Verify ticket state before any redispatch that could duplicate the external write.",
+      "files": [],
+      "expectations": [
+        "Requires checking whether the ticket was created before retrying the write.",
+        "Distinguishes uncertain action completion from model access failure.",
+        "Does not blindly redispatch the submit instruction on Sol.",
+        "Keeps any existing write-approval and idempotency requirements.",
+        "If the ticket already exists, reports success without proposing an unrequested update or comment."
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "My picker exposes exactly gpt-6-sol, gpt-6-luna, gpt-6-astra, and gpt-5.6-sol-fast. Generate model IDs for a config using 'gpt-6' and 'gpt-6-sol-fast' as shorthand aliases.",
+      "expected_output": "Use only the exact supplied IDs and explain that the requested aliases were not verified.",
+      "files": [],
+      "expectations": [
+        "Does not output gpt-6 or gpt-6-sol-fast as valid configured model values.",
+        "Offers gpt-6-sol for the general route and gpt-5.6-sol-fast for the exposed fast candidate.",
+        "Does not infer direct OpenAI API availability from these picker entries.",
+        "Explains the namespace/alias issue without declaring the real selectable models nonexistent."
+      ]
+    },
+    {
+      "id": 24,
+      "prompt": "Trigger test: my Copilot provider bill went up even though answers still pass review. Help decide whether model, effort, or retries should change.",
+      "expected_output": "Use model-routing and inspect the actual billing regime and accepted-result cost before changing configuration.",
+      "files": [],
+      "expectations": [
+        "Recognizes this as a model-routing task.",
+        "Checks the provider's billing unit and usage, including retries and review calls.",
+        "Does not import direct-API prices or fixed effort multipliers.",
+        "Does not mutate persistent settings without a configuration request."
+      ]
+    },
+    {
+      "id": 25,
+      "prompt": "Negative trigger test: translate the sentence 'We discussed GPT-6 Sol yesterday' into French. Do not recommend a model or change any settings.",
+      "expected_output": "Translate the sentence only; the model-name mention is not a routing task.",
+      "files": [],
+      "expectations": [
+        "Returns a French translation retaining the model name.",
+        "Does not invoke model-routing solely because a model name appears.",
+        "Does not add model, effort, price, or access advice."
+      ]
+    },
+    {
+      "id": 26,
+      "prompt": "Our Luna workers passed 30 tasks and the Sol reviewer flagged none. Shall we lower effort from high to low and remove the reviewer at the same time? The reviewer's ability to catch known errors has never been checked.",
+      "expected_output": "Validate the gate, then trial one cheaper setting at a time while retaining independent review.",
+      "files": [],
+      "expectations": [
+        "Explains that a silent gate is not proof it is effective.",
+        "Recommends checking the gate against known-bad outputs.",
+        "Changes at most one routing axis in a monitored trial.",
+        "Does not remove the reviewer simultaneously with lowering effort."
+      ]
+    },
+    {
+      "id": 27,
+      "prompt": "Routing fixture: in representative same-harness Copilot trials with independent acceptance checks, enabled gpt-6-sol and gpt-6-astra both miss the required quality threshold even after context fixes. Enabled claude-opus-5 high meets it at an acceptable measured cost per accepted result. We normally prefer OpenAI. Recommend for this workload only, without changing persistent settings.",
+      "expected_output": "Choose the measured Claude exception instead of turning OpenAI preference into an absolute rule.",
+      "files": [],
+      "expectations": [
+        "Recommends claude-opus-5 at high effort for this workload.",
+        "Cites the supplied representative quality and cost evidence as the justification.",
+        "Does not assert universal Claude superiority.",
+        "Does not change persistent model defaults."
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "Evaluate two availability fallbacks against this explicit schema fixture. For an owner task requiring max, the only model is gpt-5.5, whose effort support ends at xhigh. For a worker task requiring long_context, the only model is gpt-5.4-mini, whose context support is default only. These requirements cannot silently change. Are either of the named fallback-chain entries sufficient?",
+      "expected_output": "Neither candidate is compatible; chain membership alone cannot satisfy unsupported effort or context requirements.",
+      "files": [],
+      "expectations": [
+        "Rejects gpt-5.5 as an automatic max-effort fallback under the supplied schema.",
+        "Rejects gpt-5.4-mini as a long_context fallback under the supplied schema.",
+        "Does not silently clamp max to xhigh or long_context to default.",
+        "Reports the need for compatible access or an explicit re-evaluation of the task requirements."
+      ]
+    },
+    {
+      "id": 29,
+      "prompt": "I have base Copilot Pro, not Pro+. My picker offers gpt-6-luna and gpt-5.6-terra, but no Astra or Sol from either generation. I need ordinary agentic coding with moderate design judgment, and an expert checks the result against the specification. What is the no-Astra fallback?",
+      "expected_output": "Terra is the eligible judgment candidate; an unavailable Sol is not a usable fallback.",
+      "files": [],
+      "expectations": [
+        "Recommends gpt-5.6-terra as an availability fallback for this checked task.",
+        "Names the independent expert/specification check as the quality gate.",
+        "Does not cycle through unavailable GPT-6 Sol or GPT-5.6 Sol.",
+        "Does not claim Terra equals Astra, automatically substitute Luna, or require upgrading the plan."
+      ]
+    },
+    {
+      "id": 30,
+      "prompt": "Recommend for a quality-first, difficult long-horizon coding project. Astra and Sol are both enabled. Use the skill's current vendor and benchmark evidence, which I understand is not a guarantee for my codebase. I can tolerate background latency and will independently review the result.",
+      "expected_output": "Astra high is a supported recommendation for the hardest work, with Sol high as the access fallback.",
+      "files": [],
+      "expectations": [
+        "Recommends gpt-6-astra at high effort for this quality-first task.",
+        "Gives gpt-6-sol at high effort as the availability fallback.",
+        "Preserves independent verification and does not claim universal task-level superiority.",
+        "Does not require an unavailable private benchmark before making any Astra recommendation."
+      ]
+    },
+    {
+      "id": 31,
+      "prompt": "Pricing fixture in USD per million default-tier input/output tokens: Sol 2/10, Astra 10/50, Sonnet 5 2/10, Opus 5 5/25. My policy prefers OpenAI. Is Astra a cheaper substitute for Opus, and does Sol save token cost versus Sonnet?",
+      "expected_output": "No on both; provider preference does not reverse the supplied prices.",
+      "files": [],
+      "expectations": [
+        "States Astra's listed input/output rates are twice Opus 5's.",
+        "States Sol and Sonnet 5 have equal listed input/output rates.",
+        "Does not convert token-rate ratios into guaranteed total task-cost ratios.",
+        "Preserves an OpenAI preference without asserting universal OpenAI savings."
+      ]
+    },
+    {
+      "id": 32,
+      "prompt": "I'm configuring a direct OpenAI API worker that needs GPT-6 Sol high reasoning and function calling, with Astra as a possible alternative. Is Chat Completions with reasoning_effort high correct for both? Is none a safe Astra fallback? Use the per-model API compatibility documented in the skill.",
+      "expected_output": "Use Responses; Sol tool calling on Chat Completions requires none, while Astra has neither Chat Completions function calling nor none effort.",
+      "files": [],
+      "expectations": [
+        "Recommends Responses for this reasoning-plus-tools worker.",
+        "States Sol/Luna Chat Completions function calling requires none rather than high.",
+        "States Astra does not support Chat Completions function calling or none effort.",
+        "Does not translate API none support into unsupported Copilot task settings."
+      ]
+    },
+    {
+      "id": 33,
+      "prompt": "API cache-billing fixture: 1 million prefix tokens are written once at $2.50 per million, then read once at $0.20 per million; ordinary input is $2.00 per million. There are no other input or output tokens. Does the write also incur the ordinary $2 input charge?",
+      "expected_output": "No; the applicable rate replaces ordinary input pricing for those tokens, for $2.70 total.",
+      "files": [],
+      "expectations": [
+        "Computes $2.70 total rather than $4.70.",
+        "States the cache-write rate is not additive to uncached input pricing for the same tokens.",
+        "Does not prescribe Copilot task cache-breakpoint arguments based on an API example."
+      ]
+    },
+    {
+      "id": 34,
+      "prompt": "Account fixture: Copilot Free offers me only Auto model selection and no manual picker. I want to follow the skill's GPT-6 recommendations. Can it promise to pin Luna or Astra, and is paid Auto's 10% discount evidence that I can choose its exact model?",
+      "expected_output": "Respect Auto-only access and distinguish routing preferences from enforceable selections and discount eligibility.",
+      "files": [],
+      "expectations": [
+        "States that this account cannot pin a named model through the supplied host contract.",
+        "Does not imply Auto guarantees Luna or Astra.",
+        "Does not apply a paid-plan discount to the Free fixture.",
+        "Does not silently change plans or claim an upgrade is required to receive any assistance."
       ]
     }
   ]
