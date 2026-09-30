@@ -58,14 +58,15 @@ maintenance, read [evidence.md](references/evidence.md).
 | Band | OpenAI | Claude | Starting use |
 |---|---|---|---|
 | **Efficient** | GPT-6 Luna | Claude Haiku 4.5 | Bounded, independently verifiable work |
-| **Balanced** | GPT-5.6 Terra (legacy candidate) | Claude Sonnet 5.5 | Everyday work when a measured tradeoff favors it |
+| **Balanced** | GPT-6 Luna or GPT-6.1 Sol | Claude Sonnet 5.5 | Everyday work, selecting the lightest route that clears the floor |
 | **Frontier** | GPT-6.1 Sol | Claude Opus 5.5 | Ambiguity, consequential judgment, or final review |
 | **Advanced** | GPT-6 Astra | Claude Fable 5.1 | Demanding reasoning or sustained agency |
 
 These are role counterparts, not equal quality, price, token use, or speed.
-Duration alone does not require Advanced. Terra is not an automatic cheaper
-rung: current Sol has lower output/cache-read unit prices. Preserve validated
-legacy routes and explicit versions; repeat quality/effort checks on upgrades.
+Balanced is a task route, not a separate OpenAI model: choose Luna for bounded,
+independently checkable work and Sol for nuance or judgment beyond Luna's floor.
+Duration alone does not require Advanced. Preserve validated legacy routes and
+explicit versions; repeat quality/effort checks on upgrades.
 
 Apply these local starting policies:
 
@@ -88,7 +89,7 @@ production data, public contracts, and destructive actions.
 
 | Model | Provisional start when supported |
 |---|---|
-| Luna, Terra, Sol, Opus 5.5 | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
+| Luna, Sol, Opus 5.5 | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
 | Astra | `high` for demanding reasoning or agency |
 | Sonnet 5.5 | `medium` for specified agentic work; `low`/`medium` for chat; `high` for harder reasoning |
 | Fable 5.1 | `high`; trial lower effort when the gate holds |

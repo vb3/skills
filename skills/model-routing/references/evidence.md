@@ -12,6 +12,10 @@ Its guide suggests Sol medium for revisable complex work and xhigh for
 demanding polished deliverables, with same-task Sol/Astra comparisons.
 Those are vendor starting points, not universal optima.
 
+The current guide focuses on Luna, Sol, and Astra rather than a separate Terra
+tier. We have not verified a Terra retirement date: retaining it as a legacy
+or access fallback is a routing policy, not a deprecation claim.
+
 Sources: [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra.md),
 [selection guide](https://developers.openai.com/api/docs/guides/model-selection),
 [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol).

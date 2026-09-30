@@ -21,8 +21,9 @@ USD per million tokens, at base context rates:
 GPT-6.1 Sol replaces GPT-6 Sol as the preferred Sol candidate. Input/output
 prices are unchanged from GPT-6 Sol; cache reads halve to 5% of input.
 Compared with GPT-5.6 Sol, input/output prices halve. Terra's input price
-equals current Sol's, but its output and cache reads cost more. This makes Terra
-a workload-validated option, not an assumed cheaper step.
+equals current Sol's, but its output and cache reads cost more. Retain Terra
+only for explicit legacy choices, a validated workload result, or the
+access-constrained fallback below, rather than as a new balanced default.
 
 `gpt-5.6` still aliases the legacy GPT-5.6 Sol, not GPT-6.1 Sol. Its promotion
 runs at least through 2026-11-21, with no guaranteed expiry or reversion price.

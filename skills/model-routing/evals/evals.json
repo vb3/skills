@@ -48,13 +48,15 @@
     },
     {
       "id": 5,
-      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. Are the paired models equivalent, and is Terra necessarily a cheaper step before the new Sol?",
-      "expected_output": "List all four role pairs and deny metric equivalence.",
+      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. For balanced OpenAI work, choose between Luna and Sol for (A) bounded mechanical extraction with independent behavioral tests and (B) nuanced cross-source analysis needing judgment and qualified review. Should Terra still be the new balanced default, and does changing that default establish its official retirement?",
+      "expected_output": "Use Luna or Sol for balanced work according to the quality floor, retaining Terra only for legacy or constrained-access routes without claiming retirement.",
       "files": [],
       "expectations": [
-        "Pairs GPT-6 Luna with Haiku 4.5, legacy GPT-5.6 Terra with Sonnet 5.5, GPT-6.1 Sol with Opus 5.5, and Astra with Fable 5.1.",
+        "Lists Efficient Luna/Haiku, Balanced Luna-or-Sol/Sonnet 5.5, Frontier Sol/Opus 5.5, and Advanced Astra/Fable 5.1.",
         "Calls them role counterparts rather than equal-performance models.",
-        "Explains that Terra is not an automatic cheaper step because current Sol has lower output and cache-read unit prices."
+        "Chooses Luna for the bounded checked task and Sol for the task needing nuanced judgment.",
+        "Does not recommend Terra as the new balanced default, while preserving explicit validated legacy or access-fallback use.",
+        "Does not claim an official retirement date from the routing-policy change."
       ]
     },
     {
