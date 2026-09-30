@@ -1,209 +1,239 @@
 # Model map
 
-**Refreshed 2026-09-23.** Copilot CLI observations below are from version
-1.0.88 and the authoring session's live `task` schema. Public-source findings,
-including what could not be verified, live in [evidence.md](evidence.md).
-Recheck the consuming account: schema membership establishes a valid argument,
-not entitlement, numeric context capacity, pricing, or measured quality.
+**Primary sources checked 2026-09-30.** Facts below are a dated reference;
+the live host schema and account policy decide availability. Routing policy
+lives in [SKILL.md](../SKILL.md); exact encoding lives in [harnesses.md](harnesses.md).
 
-## OpenAI-first candidates
+## OpenAI API Standard pricing
 
-These are routing defaults, not a benchmark leaderboard. Use the workload
-rules in [SKILL.md](../SKILL.md); do not infer role or quality solely from a
-model's generation or name.
+USD per million tokens, at base context rates:
 
-| Role | Copilot CLI ID | Recommendation |
-|---|---|---|
-| General judgment, ownership, final review | `gpt-6-sol` | Default Sol candidate |
-| Bounded, independently verifiable work | `gpt-6-luna` | Default Luna candidate; retain the correctness gate |
-| Quality-first alternative | `gpt-6-astra` | Recommend for the hardest long-horizon coding, reasoning, or synthesis when quality warrants it; always include a Sol fallback |
-| Latency-oriented alternative | `gpt-5.6-sol-fast` | Allowed when its observed or documented quality and latency fit the task; compare with current Sol |
+| Candidate / API ID | Input | Cache read | Cache write | Output |
+|---|---:|---:|---:|---:|
+| Luna: `gpt-6-luna` | 0.10 | 0.01 | 0.125 | 0.50 |
+| Sol: `gpt-6.1-sol` | 2.00 | 0.10 | 2.50 | 10.00 |
+| Astra: `gpt-6-astra` | 10.00 | 1.00 | 12.50 | 50.00 |
+| Legacy Sol: `gpt-6-sol` | 2.00 | 0.20 | 2.50 | 10.00 |
+| Legacy Terra: `gpt-5.6-terra` | 2.00 | 0.20 | 2.50 | 12.00 |
+| Legacy Sol: `gpt-5.6-sol` | 4.00 | 0.40 | 5.00 | 20.00 |
+| Legacy Luna: `gpt-5.6-luna` | 0.20 | 0.02 | 0.25 | 1.20 |
 
-The last two entries are real IDs in this host schema. Neither is a universal
-entitlement. Astra need not be a prerequisite for using the skill, and Sol Fast
-is not interchangeable with GPT-6 Sol or with an API `service_tier` parameter.
+GPT-6.1 Sol replaces GPT-6 Sol as the preferred Sol candidate. Input/output
+prices are unchanged from GPT-6 Sol; cache reads halve to 5% of input.
+Compared with GPT-5.6 Sol, input/output prices halve. Terra's input price
+equals current Sol's, but its output and cache reads cost more. Retain Terra
+only for explicit legacy choices, a validated workload result, or the
+access-constrained fallback below, rather than as a new balanced default.
 
-### Plan-aware access
+`gpt-5.6` still aliases the legacy GPT-5.6 Sol, not GPT-6.1 Sol. Its promotion
+runs at least through 2026-11-21, with no guaranteed expiry or reversion price.
+Use explicit versioned IDs.
 
-GitHub's current announcements make GPT-6 Sol/Astra and GPT-5.6 Sol eligible
-on Pro+, Max, Business, and Enterprise, not base Pro. GPT-6 Luna and GPT-5.6
-Terra/Luna include base Pro. Free/Student use Auto selection only. Check the
-actual picker and policy: plan eligibility alone does not finish the access
-check. See [the access evidence](evidence.md#copilot-access).
+GPT-6 Luna, GPT-6.1 Sol, and Astra have 1,050,000 context, 922,000 maximum input,
+and 128,000 maximum output. Above 272K input, input/cache rates double and output
+rates increase 1.5x for the whole API request. Host limits can be smaller.
 
-For a **base-Pro judgment task**, consider `gpt-5.6-terra` if its quality gate
-is adequate, instead of cycling through unavailable Sol generations. This is
-an access fallback, not a claim that Terra matches Sol or Astra on hard work.
-If it cannot meet the requirement, report the limitation; do not silently
-assign Luna or require a plan upgrade.
+Sources: [GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol),
+[GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna),
+[Astra](https://developers.openai.com/api/docs/models/gpt-6-astra),
+[GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol),
+[API pricing](https://developers.openai.com/api/docs/pricing).
 
-### Availability fallback chains
+## Claude API Standard pricing
 
-Read left to right and take the first **available and compatible** candidate.
-These are availability paths, not claims of identical quality, price, or speed.
+USD per million tokens; cache-write rates depend on duration:
 
-| Requested route | Candidate chain |
+| Candidate / API ID | Input | 5m write | 1h write | Cache read | Output |
+|---|---:|---:|---:|---:|---:|
+| Haiku: `claude-haiku-4-5-20251001` | 1.00 | 1.25 | 2.00 | 0.10 | 5.00 |
+| Sonnet: `claude-sonnet-5-5` | 2.00 | 2.50 | 4.00 | 0.20 | 10.00 |
+| Opus: `claude-opus-5-5` | 4.00 | 5.00 | 8.00 | 0.20 | 20.00 |
+| Fable: `claude-fable-5-1` | 10.00 | 12.50 | 20.00 | 0.25 | 50.00 |
+
+Opus 5.5 was released September 22 and Sonnet 5.5 September 28. Opus's
+input/output prices fell 20% from Opus 5, while cache reads fell from $0.50
+to $0.20. Sonnet's base rates are unchanged from Sonnet 5. Cache-read ratios
+are model-specific: Opus 5.5 uses 0.05x input, Fable 5.1 uses 0.025x, and
+Sonnet/Haiku use 0.1x.
+
+Haiku's API alias is `claude-haiku-4-5`; its CLI ID uses a dot instead.
+Sonnet, Opus, and Fable have 1M context at standard context prices and 128K
+synchronous maximum output. Some batch beta limits differ. Haiku has 200K
+context and 64K output. Newer Claude tokenizers differ from older generations;
+compare actual usage, not equal-token assumptions across vendors.
+
+Sources: [Claude overview](https://platform.claude.com/docs/en/models/overview),
+[Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview),
+[Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/overview),
+[Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing).
+
+## Host billing
+
+Copilot usage-based billing converts model token charges into AI credits
+(one credit = $0.01); legacy request-based plans use their own allowances.
+Use the account's current meter, negotiated rates, and model policy rather
+than converting an API table into a Copilot bill. Paid-plan Auto has a 10%
+model-cost discount; it does not pin a particular model.
+
+The checked Copilot input, output, cache-read, and listed cache-write rates
+match the corresponding base API rates. API-only cache-duration and service
+options do not automatically transfer. GPT-6 Luna and GPT-6.1 Sol use a 272K
+input threshold with whole-request input/cache/write rates x2 and output x1.5.
+Legacy GPT-5.6 Luna uses 200K on Copilot, versus 272K on its API.
+A `long_context` flag alone does not establish the price.
+
+For token billing:
+
+```text
+request cost = sum(disjoint category tokens * applicable rate / 1,000,000)
+               + separately billed tools and services
+cost per accepted result = total bill of all attempts and reviewers / accepted results
+```
+
+Cache-write rates replace ordinary input rates for those tokens. Reasoning
+already counted in output is not charged again. Apply context, service-tier,
+cache-duration, and regional premiums. With no accepted results, report failure.
+
+Sources: [Copilot pricing](https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing),
+[individual billing](https://docs.github.com/en/copilot/concepts/billing-and-usage/individuals/billing).
+
+## Access and fallbacks
+
+Published support, schema membership, entitlement, and administrator enablement
+are separate. GPT-6.1 Sol is eligible on Pro+, Max, Business, and Enterprise,
+not base Pro. The GPT-6 Sol/Astra and legacy GPT-5.6 Sol announcements list
+the same paid plans; GPT-6 Luna and legacy Terra/Luna include Pro.
+Free/Student use Auto only. Confirm the actual picker and policy.
+
+For a base-Pro judgment task without Sol/Astra, consider eligible Terra only
+with an adequate quality gate. If it cannot meet the requirement, report the
+limit rather than substituting Luna or requiring an upgrade.
+
+Read each chain left to right, choosing the first available, compatible route:
+
+| Role | Availability chain |
 |---|---|
-| Sol | `gpt-6-sol` -> `gpt-5.6-sol` -> `gpt-5.5` |
+| Sol | `gpt-6.1-sol` -> `gpt-6-sol` -> `gpt-5.6-sol` -> `gpt-5.5` |
 | Luna | `gpt-6-luna` -> `gpt-5.6-luna` -> `gpt-5.4-mini` |
 | Astra | `gpt-6-astra` -> the Sol chain |
 | Sol Fast | `gpt-5.6-sol-fast` -> the Sol chain |
+| Opus | `claude-opus-5.5` -> `claude-opus-5` |
+| Sonnet | `claude-sonnet-5.5` -> `claude-sonnet-5` |
 
-Compatibility includes the required quality gate, modalities/tools, actual
-context capacity, supported effort controls, and deadline. An older model is
-not proved compatible just because its ID is in a chain. In particular,
-`gpt-5.5` cannot encode `max` in this snapshot and `gpt-5.4-mini` cannot encode
-`max` or `long_context`. Re-evaluate those routes rather than silently clamping.
+These are CLI IDs, not API names or quality equivalence. The base-Pro branch
+precedes repeated attempts at unavailable Sol generations. Preserve the gate,
+tools, input capacity, deadline, and supported effort on every fallback.
+`gpt-5.5` lacks task `max`; `gpt-5.4-mini` lacks `max` and `long_context` in
+this schema. Chain membership does not make an incompatible candidate usable.
+Use an available stronger candidate when it meets the constraints, or report
+the blocker. An access error is not a reasoning failure; a rate limit needs
+service-specific recovery.
 
-If no Luna candidate meets the gate, use an available Sol candidate if it fits
-the constraints; report that this is a capacity step up, not a saving. The
-base-Pro branch above takes precedence over trying unavailable Sol candidates.
-If no judgment-capable candidate fits, use a task-justified available
-alternative or report the blocker. A matched local eval can justify an
-intermediate model such as `gpt-5.6-terra`; no universal dominance claim
-excludes it.
+Sources: [GPT-6.1 announcement](https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot/),
+[GPT-6 announcement](https://github.blog/changelog/2026-09-22-openais-gpt-6-sol-and-gpt-6-luna-now-available/),
+[Astra announcement](https://github.blog/changelog/2026-09-04-gpt-6-astra-is-generally-available-in-github-copilot/),
+[GPT-5.6 announcement](https://github.blog/changelog/2026-07-09-openais-gpt-5-6-sol-terra-and-luna-are-now-available-in-github-copilot/),
+[Copilot availability](https://docs.github.com/en/copilot/reference/ai-models/supported-models).
 
-An access failure permits a compatible fallback, not identical retries against
-the unavailable model. A rate limit needs service-specific retry handling.
-Neither permits repeating an external write whose completion is uncertain.
-Host-managed dispatch still follows the override rules in `SKILL.md`.
+## API effort controls
 
-## Provider economics
-
-**Prefer OpenAI under Copilot as a routing policy, not a universal price
-theorem.** Check the current account's billing regime and relevant rates.
-Vendor API list prices, Copilot AI-credit charges, and legacy premium-request
-multipliers are different quantities.
-
-Use the [verified Copilot rate snapshot](evidence.md#copilot-pricing), including
-cache writes and long-context thresholds. GPT-6 Sol is cheaper than the listed
-Opus models but matches Sonnet 5's rates; Astra costs more than those models.
-The OpenAI preference is not a reason to label Astra a cost-saving alternative
-to Claude. Paid Auto has a 10% model-cost discount, but does not pin a model.
-
-| Environment | Compare using |
-|---|---|
-| Copilot token/AI-credit billing | Copilot model rates, cached versus uncached usage, output/reasoning usage, account discounts, and actual tool-loop usage |
-| A request-billed plan | Its documented multiplier and number of charged requests; do not import token-based effort costs |
-| Direct OpenAI or another API | That endpoint's input, cached input, billable output/reasoning, tool, and service-tier rates |
-| Subscription or bundled allowance | The product's usage policy, limits, and measured consumption; no invented dollar conversion |
-
-For token billing, sum actual usage times the applicable rates over the whole
-task, including retries, workers, and review. For request billing, sum charged
-requests times their multipliers. Divide total charge by accepted results when
-comparing routes; record acceptance criteria and elapsed time alongside cost.
-
-This refresh does not retain the old output-normalized "Luna medium = 1x"
-effort grid. Effort does not specify how many tokens a task consumes, input
-and cached usage differ between workloads, and API ratios are not Copilot
-prices. Unknown rates stay unknown; they are not zero and do not justify an
-exact savings claim.
-
-## Harness syntax
-
-### Copilot CLI
-
-Authoring-session observations, not a promise for other installations:
-
-- `task` accepts `model`, `reasoning_effort`, and `context_tier`. Its model
-  enum includes the four primary candidates above.
-- The current task instructions require omitted overrides unless the current
-  request or applicable persistent instructions explicitly require values.
-  `/subagents` resolves default and per-agent settings.
-- `/model` selects a session model; it is not the same as configuring subagent
-  defaults. `/usage` reports session usage.
-- `copilot --help` exposes `--model`, `--reasoning-effort`, and
-  `--context default|long_context`. Its global effort parser lists `none`,
-  `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. A parser-wide choice
-  is not evidence that a particular model supports every value.
-
-The task schema exposes the ordinary `low`/`medium`/`high` controls and
-explicit model lists for additional efforts and long context:
-
-| Relevant model IDs | Additional task efforts | `context_tier` |
+| Model | Supported values | Default |
 |---|---|---|
-| `gpt-6-sol`, `gpt-6-luna`, `gpt-6-astra` | `xhigh`, `max` | `default`, `long_context` |
-| `gpt-5.6-sol-fast`, `gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra` | `xhigh`, `max` | `default`, `long_context` |
-| `gpt-5.5`, `gpt-5.4` | `xhigh` | `default`, `long_context` |
-| `gpt-5.4-mini`, `gpt-5.3-codex` | `xhigh` | `default` |
-| `gpt-5-mini` | None listed | `default` |
-| `claude-opus-5.5`, `claude-opus-5`, `claude-sonnet-5` | `xhigh`, `max` | `default`, `long_context` |
-| `claude-haiku-4.5` | None listed | `default` |
+| GPT-6 Luna, GPT-6 Sol, GPT-5.6 family | `none`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
+| GPT-6.1 Sol | `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
+| Astra | `low`, `medium`, `high`, `xhigh`, `max` | Not verified |
+| Opus 5.5 | `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
+| Sonnet 5.5, Fable 5.1 | `low`, `medium`, `high`, `xhigh`, `max` | `high` |
+| Haiku 4.5 | Effort parameter unsupported | Not applicable |
 
-This is a routing-relevant subset, not the complete model catalog. The live
-schema also lists other Claude, Gemini, Grok, and MAI candidates; inspect it
-when one is needed rather than copying a stale vendor roundup. Do not invent
-`none` or `minimal` support for these OpenAI task routes from the CLI's global
-parser options.
+GPT-6.1 Sol supports neither `none` nor `minimal`, unlike GPT-6 Sol's `none`.
+Opus 5.5 changed from Opus 5's high default to medium, but can think more at
+the same label. Sonnet 5.5 recalibrated its levels: medium for well-specified
+agentic work, low/medium for chat, high for harder reasoning. Repeat effort
+sweeps after upgrades rather than carrying settings over.
 
-When the user explicitly requests a CLI model and effort, the observed syntax
-is, for example:
+Effort is adaptive, not a fixed token or time multiplier. Leave budget room
+for thinking and visible output. Haiku's manual budget on supporting APIs is
+a different parameter.
 
-```bash
-copilot --model gpt-6-sol --reasoning-effort high
-```
+Sources: [OpenAI selection](https://developers.openai.com/api/docs/guides/model-selection),
+[Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort).
 
-An explicitly requested task override uses that tool's own fields instead:
+## Speed and scheduling controls
 
-```json
-{
-  "model": "gpt-6-sol",
-  "reasoning_effort": "high"
-}
-```
+Vendor labels Luna cost-efficient and fast; Claude labels Haiku fastest,
+Sonnet fast, Opus moderate, Fable slower. These are not a standardized
+eight-model completion-time comparison or SLA.
 
-This is a fields-only illustration, not a complete task call or a reason to
-override host defaults. Add `context_tier` only when both authorized and needed.
-Do not create unverified shorthand aliases such as `gpt-6`, or extrapolate a
-`gpt-6-sol-fast` ID from the available GPT-5.6 fast variant.
+| Control | Scope | Price or constraint |
+|---|---|---|
+| OpenAI Fast | API `service_tier="fast"` or `"priority"` on supported GPT-6/5.6 | 2x Standard rates; check returned tier |
+| Astra Ultrafast | API `service_tier="ultrafast"` | 6x Standard; low initial limits; global or US processing only |
+| Claude Fast preview | Opus 5.5, Opus 5, Opus 4.8 on Claude API | Access, `speed="fast"`, and documented beta header required; check premium |
 
-### VS Code and other agent hosts
+Fast is unavailable for GPT-6.1 Sol and Astra with EU residency. API tiers
+are not Copilot task arguments. The exposed internal `gpt-5.6-sol-fast` is a
+valid legacy latency candidate when workload quality/time supports it, with
+the compatible Sol fallback. Its Copilot price/backend remain unverified;
+do not invent `gpt-6.1-sol-fast` or treat an API multiplier as its bill.
 
-Inspect the active tool's accepted model values. Some hosts expose display
-labels, some IDs, and some delegate selection to configuration. Use the exact
-returned value; do not derive a display label by title-casing a CLI ID.
+Both providers discount supported API batches 50%. Allow for the 24-hour
+window, failed/expired items, result handling, and retries. Independent
+requests fit; dependent client-tool loops still require orchestration.
+Copilot background work is not an API batch job.
 
-Inspect effort and context fields independently. When absent, give the
-recommendation as unenforced guidance and do not invent an argument or claim
-that words in a prompt implement a model reasoning control. No current
-GPT-6 VS Code label is asserted by this CLI-only snapshot.
+Sources: [OpenAI Fast](https://developers.openai.com/api/docs/guides/fast-mode),
+[Ultrafast](https://developers.openai.com/api/docs/guides/ultrafast-mode),
+[Claude Fast](https://platform.claude.com/docs/en/build-with-claude/fast-mode),
+[OpenAI Batch](https://developers.openai.com/api/docs/guides/batch),
+[Claude batches](https://platform.claude.com/docs/en/build-with-claude/batch-processing).
 
-### OpenAI API, Agents SDK, and Codex
+## Prompt caching
 
-The public API documents `gpt-6-sol`, `gpt-6-luna`, and `gpt-6-astra`; still
-resolve account access before setting SDK `model` or reasoning options.
-A working Copilot ID alone does not establish API availability, notably for
-`gpt-5.6-sol-fast`. Check the installed SDK's supported `ModelSettings` fields
-rather than copying Copilot arguments.
+GPT-5.6 and later support implicit/explicit caching, 1.25x writes, and a
+documented `"30m"` TTL. Reads are 0.05x input on GPT-6.1 Sol and 0.1x on the
+other OpenAI candidates above.
 
-Use Responses for GPT-6 reasoning with tools. Sol/Luna permit Chat Completions
-function calling only at `none` effort; Astra does not support that endpoint's
-function calling and cannot use `none`. Sol/Luna support API efforts from
-`none` through `max`, excluding `minimal`; Astra supports `low` through `max`.
-Those API values do not add unsupported controls to a Copilot task.
-The [API evidence](evidence.md#api-capabilities-are-not-harness-guarantees)
-also records numeric API windows, which must not be copied as host limits.
+Implicit mode can reuse up to 20 earlier eligible message endings, the initial
+developer block, and explicit breakpoints. A changing suffix does not prove
+there are no cache hits.
 
-For Codex, inspect the installed version's model choices and profile schema.
-Use its supported model and reasoning configuration, not Copilot's
-`context_tier` field. Check product context and usage limits separately from
-API model limits; this skill does not retain a hard-coded Codex context size.
+For explicit-only control, use `prompt_cache_options.mode="explicit"` and
+`prompt_cache_breakpoint: {"mode": "explicit"}` on a supported content block
+ending the stable prefix. Later content uses ordinary input pricing.
+Without breakpoints, explicit-only creates no writes/reuse. A stable cache
+key helps routing but does not guarantee a hit.
 
-## Measuring a route
+Inspect input/read/write/output usage, retries, and tiers before attributing
+a bill. A 25% write premium alone cannot produce a 3x total bill against
+otherwise identical uncached-input pricing. These are API controls, not
+invented Copilot task arguments.
 
-Use representative inputs with independent acceptance criteria and keep the
-host, tools, context, and effort explicit. Compare quality, p50/p95 completion
-time, time to useful output, actual provider charge, and retries. Repeat enough
-cases to expose failure modes; a single attractive answer is not a ranking.
+Source: [OpenAI caching](https://developers.openai.com/api/docs/guides/prompt-caching).
 
-Test access separately from capability. A model picker entry or successful
-trivial response confirms less than a representative workload. If Astra or
-Sol Fast is unavailable, exercise the advertised fallback with the same gate.
-If a comparison changes generation and effort together, do not attribute its
-gain to effort alone.
+## Version-specific integration constraints
 
-Prompt caching, API batch processing, and paid service tiers are
-provider-specific controls. Consult the freshly verified sources in
-[evidence.md](evidence.md) before generating their configuration. No cache-write
-premium, explicit-breakpoint protocol, speed multiplier, or batch discount
-applies merely because it appeared in an older version of this skill.
+GPT-6.1 Sol and Astra require Responses for tools; Chat Completions is
+supported without tools. GPT-6 Luna/Sol permit Chat Completions function
+calling only at `none`. Async tools require application/host support too.
+
+Opus 5.5 and Fable 5.1 always use adaptive thinking; disabled thinking and
+manual budgets are invalid. Sonnet 5.5 uses `between_tools` at low/medium/high
+to skip up-front thinking; disabled/manual budgets are invalid. At xhigh/max
+use adaptive thinking.
+
+All three reject forced any/named `tool_choice`; use supported auto/none and
+strict tools or structured outputs for schemas. Their thinking blocks bind
+to model/history. Switching can drop reasoning; editing earlier turns can
+invalidate blocks. Use supported compaction and migration.
+
+Opus/Sonnet 5.5 progress can arrive as thinking blocks, omitted by default
+display. Configure documented display when needed. On Claude API and Google
+Cloud they use the newer computer-use toolset, not `computer_20251124`.
+Before sensitive Fable work, check enablement and retention requirements;
+GitHub describes conditional enterprise arrangements, not universal access.
+
+Sources: [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra.md),
+[Opus changes](https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5),
+[Sonnet changes](https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5),
+[Fable changes](https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1).

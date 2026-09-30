@@ -3,409 +3,361 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Recommend models and efforts for six independent JSON-library migrations and a final reviewer. GPT-6 Sol and Luna are available through Copilot. Existing acceptance tests independently cover serialization compatibility. This is background work; I review the final result. Give recommendations, not dispatches.",
-      "expected_output": "GPT-6 Luna high for bounded workers; GPT-6 Sol high for consequential final code review.",
+      "prompt": "Autonomously select models, without dispatching, for six independent Newtonsoft.Json-to-System.Text.Json migration workers and a final reviewer. Existing behavioral tests cover each migration, but converter, naming-policy, and null-handling differences make the work non-mechanical. The current model is Astra, no family or objective was selected, and the host supports Luna and Sol with low through max effort.",
+      "expected_output": "Disclose OpenAI and cost defaults, use Luna workers with the test gate, and use Sol for final judgment.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-luna at high effort for the workers and names the compatibility tests as the gate.",
-        "Recommends gpt-6-sol at high effort for the reviewer.",
-        "Does not claim a fixed cost multiplier or guaranteed savings for worker-plus-reviewer.",
-        "Does not dispatch agents or change configuration."
+        "States that OpenAI and cost are applied defaults.",
+        "Selects GPT-6 Luna at medium or high effort for the workers and names the behavioral tests as the gate.",
+        "Selects GPT-6.1 Sol for the final reviewer.",
+        "Does not dispatch agents."
       ]
     },
     {
       "id": 2,
-      "prompt": "Which model should write our multi-tenant data-isolation ADR? Copilot offers GPT-6 Sol and Luna; Astra is not available. The design is ambiguous, durable, and difficult to reverse. I will review it.",
-      "expected_output": "GPT-6 Sol high, without stacking all three stakes into max.",
+      "prompt": "What model should I use for this implementation? I have not chosen OpenAI or Claude, or cost versus latency. Both choices would change my decision. Grade only the next reply.",
+      "expected_output": "Ask only for the missing family.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-sol at high effort.",
-        "Explains that architectural judgment and missed edge cases matter.",
-        "Does not compound the overlapping stakes into xhigh or max.",
-        "Does not recommend unavailable Astra or print the entire routing matrix."
+        "Asks whether the user wants OpenAI or Claude.",
+        "Does not also ask cost versus latency in this reply.",
+        "Does not choose a model or present the full matrix."
       ]
     },
     {
       "id": 3,
-      "prompt": "Recommend a model for difficult cross-repo architecture synthesis. My Copilot picker offers gpt-6-astra and gpt-6-sol, both with high effort. In a same-harness pilot Astra caught two independently confirmed architectural errors Sol missed. Latency is not the constraint. Our teammate cannot access Astra.",
-      "expected_output": "Astra high for the demonstrated quality gain, with Sol high as the teammate's access fallback.",
+      "prompt": "Prior turn: you asked which model family I want, and I answered Claude. Cost versus latency remains unspecified and would change the implementation route. Grade only the next reply.",
+      "expected_output": "Ask only for the remaining optimization preference.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-astra at high effort based on the supplied comparison.",
-        "Explicitly gives gpt-6-sol at high effort as the no-Astra fallback.",
-        "Preserves an independent architecture review gate for either model.",
-        "Does not assert universal Astra superiority or infer its price or context size."
+        "Asks whether to optimize for cost or latency.",
+        "Retains the already supplied Claude family.",
+        "Does not select a model yet."
       ]
     },
     {
       "id": 4,
-      "prompt": "I want a broadly reusable difficult-debugging recommendation. Available models are gpt-6-sol and gpt-6-luna with low through max effort. Astra is absent. We have no reproduction yet. Should the recommendation require Astra because it is newest?",
-      "expected_output": "No; Sol high is the usable default, and Astra is an optional evidence-backed candidate.",
+      "prompt": "Explain how HTTP request coalescing differs from caching. I am not asking about AI models or agent configuration.",
+      "expected_output": "Answer the software question without invoking the routing questionnaire.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-sol at high effort rather than blocking on Astra.",
-        "Does not invent a way to access Astra or alias gpt-6 to it.",
-        "Separates model availability from comparative quality evidence.",
-        "Keeps finding a reproduction and checking the root cause in the workflow."
+        "Explains request coalescing versus caching.",
+        "Does not ask for a model family or optimization goal.",
+        "Does not recommend a model or effort."
       ]
     },
     {
       "id": 5,
-      "prompt": "An explicitly selected gpt-6-astra high read-only synthesis call returned '403 model not enabled'. The host offers gpt-6-sol with high and long_context; both match the task requirements. What fallback should be used?",
-      "expected_output": "Report the access failure and substitute compatible Sol, without dropping effort or repeating Astra.",
+      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. For balanced OpenAI work, choose between Luna and Sol for (A) bounded mechanical extraction with independent behavioral tests and (B) nuanced cross-source analysis needing judgment and qualified review. Should Terra still be the new balanced default, and does changing that default establish its official retirement?",
+      "expected_output": "Use Luna or Sol for balanced work according to the quality floor, retaining Terra only for legacy or constrained-access routes without claiming retirement.",
       "files": [],
       "expectations": [
-        "Names gpt-6-sol as the availability fallback.",
-        "Preserves high effort and the required context support.",
-        "Reports the substitution rather than claiming Astra ran.",
-        "Does not treat a 403 as a reasoning failure or retry the same unavailable model."
+        "Lists Efficient Luna/Haiku, Balanced Luna-or-Sol/Sonnet 5.5, Frontier Sol/Opus 5.5, and Advanced Astra/Fable 5.1.",
+        "Calls them role counterparts rather than equal-performance models.",
+        "Chooses Luna for the bounded checked task and Sol for the task needing nuanced judgment.",
+        "Does not recommend Terra as the new balanced default, while preserving explicit validated legacy or access-fallback use.",
+        "Does not claim an official retirement date from the routing-policy change."
       ]
     },
     {
       "id": 6,
-      "prompt": "Recommend routes for an architecture owner and bounded implementation workers. This Copilot account offers only gpt-5.6-sol and gpt-5.6-luna, each with high and medium effort. Worker outputs have independent acceptance tests. None of the GPT-6 models is enabled.",
-      "expected_output": "Use the older compatible Sol/Luna candidates, clearly labeled as availability fallbacks.",
+      "prompt": "family=openai, optimize_for=cost. Choose a model for a consequential multi-tenant isolation ADR. All OpenAI candidates are available, no workload measurements exist, and an independent security architect will review the isolation invariants.",
+      "expected_output": "Use provisional Sol high with the independent review as the gate.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol high for the architecture owner.",
-        "Recommends gpt-5.6-luna high for the checked workers.",
-        "Identifies these as availability fallbacks rather than claiming they are GPT-6 equivalents.",
-        "Does not introduce Claude, an unavailable model, or an invented alias."
+        "Recommends GPT-6.1 Sol at high effort.",
+        "Names the independent isolation review as the gate.",
+        "Labels the choice provisional rather than a measured cost winner.",
+        "Does not select Astra solely because it is newer."
       ]
     },
     {
       "id": 7,
-      "prompt": "Our human-blocking Copilot explanation panel spends most of its 30 seconds generating a response on gpt-6-sol medium. The picker also exposes gpt-5.6-sol-fast, with medium effort. A same-prompt pilot meets our answer-quality gate and reduces p95 to 8 seconds at an acceptable observed Copilot charge. What should we recommend, including for users without the fast model?",
-      "expected_output": "Recommend the exposed Sol Fast model for this measured latency win, with GPT-6 Sol as the compatible fallback.",
+      "prompt": "family=claude, optimize_for=cost. Choose workers for 40 bounded C# fixes. Each has a clear patch specification, an existing reproduction test, regression tests, and an independent Opus reviewer. The host exposes Haiku as claude-haiku-4.5 with no effort control, plus Sonnet and Opus.",
+      "expected_output": "Start Haiku workers without inventing an effort control.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-sol-fast at medium effort for the measured workload.",
-        "Includes gpt-6-sol at medium as the unavailable-fast fallback and notes the fallback is not guaranteed to meet 8 seconds.",
-        "Does not claim fast controls are universally unavailable.",
-        "Does not encode service_tier or invent gpt-6-sol-fast."
+        "Selects claude-haiku-4.5 for the bounded workers.",
+        "Names the tests and independent reviewer as gates.",
+        "Omits reasoning effort for Haiku.",
+        "Stays within Claude."
       ]
     },
     {
       "id": 8,
-      "prompt": "The only fact I have about gpt-5.6-sol-fast is that it appears in the Copilot model list. Can I advertise it as exactly GPT-6 Sol quality at 2.5x speed and 2x price, using an OpenAI fast-service-tier blog as evidence?",
-      "expected_output": "No; model identity, quality, speed, and Copilot price each need applicable evidence.",
+      "prompt": "family=openai, optimize_for=latency. Our assistant requires at least 95% accepted answers. Same-host end-to-end measurements including retries: Luna medium 84% and p95 4s; Terra medium 97% and p95 6s; Sol medium 98% and p95 9s. Cost is not limiting.",
+      "expected_output": "Choose Terra medium as the fastest measured configuration above the floor.",
       "files": [],
       "expectations": [
-        "Rejects transferring API service-tier figures to the Copilot -fast model.",
-        "Distinguishes GPT-5.6 Sol Fast from GPT-6 Sol.",
-        "Requires provider-specific evidence or a same-workload comparison for the numerical claims.",
-        "Still allows Sol Fast as a candidate rather than banning it."
+        "Selects Terra at medium effort.",
+        "Rejects Luna because it misses the acceptance floor.",
+        "Uses end-to-end accepted-result latency rather than throughput.",
+        "Does not override the supplied measurement with a general cost prior."
       ]
     },
     {
       "id": 9,
-      "prompt": "Routing fixture, not a claim about real prices: our Copilot bill is token-based. For a representative accepted task, gpt-6-sol costs 8 credits and claude-opus-5 costs 20, including retries. Both pass the same quality gate. A separate direct-API benchmark has Claude cheaper. Which default should we use in Copilot?",
-      "expected_output": "OpenAI Sol under the actual Copilot economics, not the unrelated API benchmark.",
+      "prompt": "family=claude, optimize_for=latency. Haiku misses the quality floor in our interactive assistant. Opus high passes but is too slow. We control the Claude API and have no Sonnet measurements yet. What should we try?",
+      "expected_output": "Trial Sonnet with explicit effort and the existing quality gate.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-sol for this Copilot workload.",
-        "Uses the supplied Copilot cost per accepted result rather than direct-API prices.",
-        "Does not claim all OpenAI models are universally cheaper than all Claude models.",
-        "Does not reinterpret credits as premium-request multipliers."
+        "Recommends a Sonnet 5.5 trial.",
+        "Treats the chosen effort as an explicit trial rather than an inherited Claude API default.",
+        "Requires measuring accepted-result latency and quality.",
+        "Does not present Sonnet as already validated."
       ]
     },
     {
       "id": 10,
-      "prompt": "Billing fixture: this legacy plan charges one premium request per Sol call regardless of effort. A direct Sol high solution passes in one call. A Luna worker plus Sol reviewer costs 0.5 plus 1 request and also passes. Both meet latency. Is worker-plus-reviewer cheaper because high effort has a 1.75x token multiplier?",
-      "expected_output": "No; the one-call route costs 1 request versus 1.5, and a fixed effort-token multiplier is inapplicable.",
+      "prompt": "family=openai, optimize_for=latency. In representative full-workflow runs with the same gate, Sol high and Astra high both pass. P95 accepted completion is eight hours on Sol and five hours on Astra, including tools and recovery. Astra's higher bill is approved, and our Responses integration supports async tools.",
+      "expected_output": "Choose Astra high from the measured completion-time result.",
       "files": [],
       "expectations": [
-        "Computes 1 request for the direct route and 1.5 for worker-plus-reviewer.",
-        "Rejects the purported fixed 1.75x effort-cost multiplier.",
-        "Respects the fixture's billing regime instead of substituting current token billing.",
-        "Separates latency and quality considerations from the stated request cost."
+        "Selects Astra at high effort.",
+        "Grounds the choice in five versus eight hours to accepted completion.",
+        "Does not claim that selecting Astra alone supplies application-side async tool support.",
+        "Does not generalize this result to short chat turns."
       ]
     },
     {
       "id": 11,
-      "prompt": "I have 40 well-described C# repository issues with reproductions and independent acceptance tests. GPT-6 Sol and Luna are available through Copilot. Should we automatically choose Claude because an old SWE-Bench comparison preferred Opus for repository patching?",
-      "expected_output": "No automatic Claude override; checked Luna workers with Sol judgment/review is the OpenAI-first starting route.",
+      "prompt": "family=openai, optimize_for=cost. Sol high and Astra high both satisfy the same long-workflow gate. Total bills per accepted result, including retries, tools, cache charges, and review, are $2.40 on Sol and $1.80 on Astra. Both meet the deadline.",
+      "expected_output": "Choose Astra high from measured accepted-result cost.",
       "files": [],
       "expectations": [
-        "Keeps an OpenAI-first recommendation with GPT-6 Luna for bounded fixes and GPT-6 Sol for judgment or final review.",
-        "Names the acceptance tests as the worker verification gate.",
-        "Does not transfer old cross-harness benchmark rankings to current models.",
-        "Allows a Claude switch if a representative comparison or required capability justifies it."
+        "Selects Astra at high effort.",
+        "Uses $1.80 versus $2.40 per accepted result.",
+        "Does not substitute lower token price for measured total cost.",
+        "Limits the conclusion to the supplied workflow."
       ]
     },
     {
       "id": 12,
-      "prompt": "For this advisory routing answer, explicitly choose claude-opus-5 for a required independent-family critique of an OpenAI-authored architecture. It is enabled and supports high effort. The normal provider preference is OpenAI.",
-      "expected_output": "Honor the explicit independent-family requirement rather than applying OpenAI preference as a prohibition.",
+      "prompt": "family=openai, optimize_for=cost. We plan hundreds of agentic jobs lasting several hours. Sol and Astra both support the requirements, but we have no task-level quality, cost, or latency measurements. Should duration alone make Astra the standard?",
+      "expected_output": "Use a bounded Sol pilot and evaluate Astra before scaling.",
       "files": [],
       "expectations": [
-        "Recommends claude-opus-5 at high effort.",
-        "Explains the independent-family requirement as the exception.",
-        "Does not replace the requested model with Sol or Astra.",
-        "Does not imply changing any persistent host defaults."
+        "Does not treat duration alone as requiring Astra.",
+        "Recommends a bounded Sol pilot with an acceptance gate.",
+        "Recommends comparing Astra before scaling.",
+        "Does not claim either unmeasured model is a proven winner."
       ]
     },
     {
       "id": 13,
-      "prompt": "A Luna implementation is well tested but implements caching when I wanted request coalescing. Should I rerun at max?",
-      "expected_output": "Clarify the missing or misunderstood intent; effort alone is not the remedy.",
+      "prompt": "family=openai, optimize_for=cost. I explicitly choose legacy GPT-5.6 Luna, not GPT-6 Luna, to draft customer runbooks. They remain unpublished, and no independent reviewer or correctness checks exist. Honor the version choice and explain the state of the result.",
+      "expected_output": "Honor legacy GPT-5.6 Luna while clearly marking the drafts unverified.",
       "files": [],
       "expectations": [
-        "Checks whether request coalescing was actually specified.",
-        "Does not recommend max as the first fix.",
-        "Recommends a judgment-capable Sol candidate if an adequate prompt was still misunderstood.",
-        "Explains why tests derived from the same misunderstanding are not an independent gate."
+        "Retains the explicit GPT-5.6 Luna choice without silently upgrading to GPT-6 Luna.",
+        "States that no qualifying gate exists.",
+        "Identifies what remains unverified before publication.",
+        "Does not claim the drafts are ready for customer use."
       ]
     },
     {
       "id": 14,
-      "prompt": "After a two-hour Codex session Sol is contradicting earlier decisions and undoing its own fixes. Raising effort from medium to high did not help. What now? I have not supplied this Codex installation's context limit.",
-      "expected_output": "Repair context and checkpoints, not an assumed numeric context limit or another effort increase.",
+      "prompt": "family=claude, optimize_for=latency. Fable and Opus high both pass the same independent reference checks. Measured p95 accepted completion is four hours on Fable and six on Opus. The host exposes only Opus, Sonnet, and Haiku.",
+      "expected_output": "Use validated Opus high and report unavailable Fable.",
       "files": [],
       "expectations": [
-        "Recommends restating the objective and constraints, compacting, or fresh bounded subtasks.",
-        "Does not fabricate a Codex token limit or a fixed number of exchanges before drift.",
-        "Does not prescribe another effort increase to fix the drift.",
-        "Separates product context limits from vendor API limits."
+        "Selects the available Opus high configuration.",
+        "Names the independent checks as the fallback justification.",
+        "States that the faster measured Fable route is unavailable.",
+        "Does not invent Fable availability or switch vendors."
       ]
     },
     {
       "id": 15,
-      "prompt": "Give a model-routing recommendation for a bounded VS Code planning worker. Schema fixture: runSubagent accepts only model and prompt; model choices are exactly 'GPT-6 Luna (copilot)' and 'GPT-6 Sol (copilot)'. The parent planner and independent Sol review check the worker's section. Give the exact model value and whether effort can be enforced.",
-      "expected_output": "Use the supplied Luna display name, with medium as an unenforced effort recommendation.",
+      "prompt": "family=claude, optimize_for=latency. Fable is the only model that passes the required independent gate. Opus, Sonnet, and Haiku fail it. The host does not expose Fable, and OpenAI is not authorized. Give the safe routing decision and the minimum next step that could unblock it.",
+      "expected_output": "Report that no available authorized route clears the floor.",
       "files": [],
       "expectations": [
-        "Uses the exact model value GPT-6 Luna (copilot).",
-        "Recommends medium effort for bounded planning.",
-        "States that this supplied tool schema cannot enforce effort.",
-        "Does not invent a reasoning_effort field or claim prompt wording is equivalent."
+        "Reports a blocker rather than a successful route.",
+        "Does not fall back to Opus below the quality floor.",
+        "Does not invent Fable availability or cross to OpenAI.",
+        "Names approved Fable access or changed requirements as possible resolutions."
       ]
     },
     {
       "id": 16,
-      "prompt": "Produce a task-tool call shape, without actually dispatching. Host fixture: /subagents resolves model, effort, and context; the tool instruction permits overrides only if the current user request or persistent instructions explicitly require values. The underlying request is merely 'run the tests'. There is no explicit model, effort, or context requirement.",
-      "expected_output": "Omit all three overrides and preserve the host defaults.",
+      "prompt": "family=openai, optimize_for=cost. Give the supported routing fields followed by one concise routing note, without dispatching. A bounded planning worker has a qualified primary planner and an independent critique. This runSubagent fixture accepts model labels 'GPT-5.6 Luna (copilot)' and 'GPT-5.6 Sol (copilot)' but exposes no effort or context fields.",
+      "expected_output": "Use the verified Luna display label and mark effort unenforced.",
       "files": [],
       "expectations": [
-        "Omits model, reasoning_effort, and context_tier from the proposed task arguments.",
-        "Does not treat the skill's preferred Luna route as authorization to override /subagents.",
-        "Does not claim to know which model the host will run.",
-        "Does not actually dispatch an agent."
+        "Uses GPT-5.6 Luna (copilot), not an API ID.",
+        "Names the two reviews as the gate.",
+        "Marks intended medium effort as unenforced.",
+        "Does not emit unsupported fields or dispatch."
       ]
     },
     {
       "id": 17,
-      "prompt": "We requested Astra with long_context for a synthesis whose required input cannot currently be split without losing cross-document relationships. Astra is unavailable. The only remaining model is gpt-5-mini, and the supplied host contract says it cannot fit the input or use long_context. Can we silently fall back to it?",
-      "expected_output": "Report no compatible fallback; expose the context blocker instead of losing input.",
+      "prompt": "family=openai, optimize_for=cost. A GPT-5.6 loop has a stable system/tool prefix, implicit caching, and a changing suffix. The bill is three times an estimate based on uncached Standard input, but no per-call usage breakdown exists. Is the suffix definitely causing full cache writes with no reuse?",
+      "expected_output": "Refuse the unsupported cache diagnosis and inspect actual usage.",
       "files": [],
       "expectations": [
-        "Declines the silent fallback because the remaining model violates the context requirement.",
-        "Does not send unsupported long_context or silently truncate evidence.",
-        "Reports the blocker and the need for a compatible model or a revised task boundary.",
-        "Does not assert that Sol is available in this fixture."
+        "States that implicit caching can reuse an earlier matching prefix despite a changing suffix.",
+        "Explains that a 1.25x write rate alone cannot create a 3x total bill under the stated comparison.",
+        "Requests input, cache-read, cache-write, output, retry, and service/context-tier usage.",
+        "Does not immediately reroute the model."
       ]
     },
     {
       "id": 18,
-      "prompt": "Sol at xhigh was justified by our adversarial eval. A provider outage leaves only a model whose tool schema supports low, medium, and high. Can we copy xhigh to the fallback or silently clamp it to high?",
-      "expected_output": "Re-evaluate compatibility; neither an unsupported parameter nor an undisclosed quality downgrade is valid.",
+      "prompt": "family=openai, optimize_for=latency. A trace shows a 180-second Luna task spends 120 seconds on 40 independent file reads issued serially and 60 seconds on everything else. Should we switch models first?",
+      "expected_output": "Target the measured serial-tool bottleneck first.",
       "files": [],
       "expectations": [
-        "Does not send unsupported xhigh.",
-        "Does not silently claim high preserves the evaluated xhigh behavior.",
-        "Requires a compatible candidate or an explicit re-evaluation of the quality bar.",
-        "Distinguishes a service outage from a reasoning-quality failure."
+        "Identifies serial independent reads as the dominant wait.",
+        "Recommends batching or parallelizing those reads.",
+        "Does not promise a fixed gain or start with a model switch."
       ]
     },
     {
       "id": 19,
-      "prompt": "Luna takes three minutes for a task with 40 file reads issued serially. We have no per-stage timings or comparative model measurements. Should we switch models first?",
-      "expected_output": "Measure and reduce serial round trips before assuming model throughput is the problem.",
+      "prompt": "family=openai, optimize_for=cost. Sol is contradicting earlier decisions and undoing fixes in a long Codex session. Raising effort did not help. What should I inspect before changing models?",
+      "expected_output": "Repair goals and context before treating the failure as model incapacity.",
       "files": [],
       "expectations": [
-        "Identifies serial reads as a likely bottleneck and recommends parallel independent reads.",
-        "Requests or instruments per-stage timing before ranking replacement models.",
-        "Does not claim Luna is the fastest available model.",
-        "Does not promise a fixed percentage latency reduction."
+        "Recommends restoring the objective, constraints, and acceptance criteria.",
+        "Recommends supported compaction or bounded fresh subtasks.",
+        "Does not prescribe further effort escalation.",
+        "Does not invent a fixed turn count for context drift."
       ]
     },
     {
       "id": 20,
-      "prompt": "An API regression eval must finish by 9 a.m., eight hours from now. The endpoint's Batch API documentation says up to 24 hours. It measures our production Sol high behavior. Should I call it batch work and switch to Luna low to save money?",
-      "expected_output": "The batch turnaround does not satisfy the deadline, and the production configuration must remain the subject of the eval.",
+      "prompt": "family=claude, optimize_for=cost. We control the Claude API and have three days of slack. One workload classifies independent documents; another requires client tools between every model response. Can Message Batches automatically make both entire workflows 50% cheaper and guarantee overnight completion?",
+      "expected_output": "Apply batch to supported independent requests, not automatically to a dependent loop.",
       "files": [],
       "expectations": [
-        "States that a 24-hour turnaround cannot guarantee the eight-hour deadline.",
-        "Keeps Sol high to measure production behavior.",
-        "Does not treat Copilot background execution as use of an API Batch endpoint.",
-        "Separates scheduling and pricing from the configuration being evaluated."
+        "Identifies the supported batch discount for independent requests.",
+        "Recommends batching the document classifications.",
+        "Explains that client-tool rounds still need orchestration.",
+        "Accounts for processing windows, failures, result collection, and retries rather than guaranteeing completion."
       ]
     },
     {
       "id": 21,
-      "prompt": "Choose effort for a background security review using available GPT-6 Sol. It ships to a customer, but I review the result. We have no evidence yet that xhigh beats high for this workload.",
-      "expected_output": "Start at high and evaluate any xhigh escalation, without inferring effort gains from a generational benchmark.",
+      "prompt": "family=openai, optimize_for=cost. On this hypothetical request-based host plan, Luna and Sol each consume one allowance unit per request regardless of tokens. On the same bounded task and gate, Luna needs three requests per accepted result and Sol needs one. Which is cheaper?",
+      "expected_output": "Choose Sol from the supplied host billing regime.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-sol at high effort as the initial route.",
-        "Treats xhigh as a trial justified by deeper coverage rather than mandatory for all security work.",
-        "Does not compound customer exposure into max.",
-        "Does not cite a between-model benchmark as proof of a within-model effort gain."
+        "Selects Sol based on one allowance unit versus three.",
+        "Uses the supplied host billing rules rather than API token prices.",
+        "Does not generalize request-based billing to every host."
       ]
     },
     {
       "id": 22,
-      "prompt": "An Astra agent might have submitted a support ticket just before the connection failed. Sol is available as fallback. Should we redispatch the same submit instruction now?",
-      "expected_output": "Verify ticket state before any redispatch that could duplicate the external write.",
+      "prompt": "family=openai, optimize_for=latency. We are upgrading an API agent from gpt-6-sol to gpt-6.1-sol. The old request used Chat Completions with function tools and effort=none. We want to keep those fields unchanged for lower latency. Give compatible migration guidance.",
+      "expected_output": "Use Responses for GPT-6.1 Sol tools and evaluate a supported effort rather than carrying none forward.",
       "files": [],
       "expectations": [
-        "Requires checking whether the ticket was created before retrying the write.",
-        "Distinguishes uncertain action completion from model access failure.",
-        "Does not blindly redispatch the submit instruction on Sol.",
-        "Keeps any existing write-approval and idempotency requirements.",
-        "If the ticket already exists, reports success without proposing an unrequested update or comment."
+        "Identifies none as unsupported on GPT-6.1 Sol despite support on GPT-6 Sol.",
+        "Uses Responses for tool calling instead of preserving a tool-using Chat Completions request.",
+        "Proposes a supported effort trial with quality checks and does not promise instant output."
       ]
     },
     {
       "id": 23,
-      "prompt": "My picker exposes exactly gpt-6-sol, gpt-6-luna, gpt-6-astra, and gpt-5.6-sol-fast. Generate model IDs for a config using 'gpt-6' and 'gpt-6-sol-fast' as shorthand aliases.",
-      "expected_output": "Use only the exact supplied IDs and explain that the requested aliases were not verified.",
+      "prompt": "family=claude, optimize_for=cost. Give explicitly authorized API and Copilot CLI model/effort configurations for Opus 5.5 in an ordinary reasoning workflow with independent review. The CLI fixture supports claude-opus-5.5 and low through max effort. Our previous Opus 5 integration omitted effort, disabled thinking, and forced a named tool. Explain the omitted-effort change and the quality checks needed for migration. Can we copy those settings unchanged?",
+      "expected_output": "Use Opus 5.5 medium with the correct host-specific ID; reject disabled thinking and forced-tool settings.",
       "files": [],
       "expectations": [
-        "Does not output gpt-6 or gpt-6-sol-fast as valid configured model values.",
-        "Offers gpt-6-sol for the general route and gpt-5.6-sol-fast for the exposed fast candidate.",
-        "Does not infer direct OpenAI API availability from these picker entries.",
-        "Explains the namespace/alias issue without declaring the real selectable models nonexistent."
+        "Uses claude-opus-5-5 for the API and claude-opus-5.5 for the CLI.",
+        "Selects explicit medium effort and identifies it as the Opus 5.5 API default, unlike Opus 5 high.",
+        "States that thinking cannot be disabled and that forced named/any tool choice is unsupported.",
+        "Requires quality revalidation rather than claiming an effort label is equivalent across versions."
       ]
     },
     {
       "id": 24,
-      "prompt": "Trigger test: my Copilot provider bill went up even though answers still pass review. Help decide whether model, effort, or retries should change.",
-      "expected_output": "Use model-routing and inspect the actual billing regime and accepted-result cost before changing configuration.",
+      "prompt": "family=openai, optimize_for=cost. This ordinary Copilot task delegation has no user or persistent instruction requiring model, reasoning-effort, or context overrides; /subagents owns the defaults. A bounded worker has existing behavioral tests and an independent reviewer. Give an advisory route and the override fields to send, without dispatching.",
+      "expected_output": "Advise GPT-6 Luna but omit all three host-managed override fields.",
       "files": [],
       "expectations": [
-        "Recognizes this as a model-routing task.",
-        "Checks the provider's billing unit and usage, including retries and review calls.",
-        "Does not import direct-API prices or fixed effort multipliers.",
-        "Does not mutate persistent settings without a configuration request."
+        "Advises GPT-6 Luna and names the supplied gate.",
+        "Omits model, reasoning_effort, and context_tier from the dispatch overrides.",
+        "Does not claim to know which model the host default actually runs or dispatch an agent."
       ]
     },
     {
       "id": 25,
-      "prompt": "Negative trigger test: translate the sentence 'We discussed GPT-6 Sol yesterday' into French. Do not recommend a model or change any settings.",
-      "expected_output": "Translate the sentence only; the model-name mention is not a routing task.",
+      "prompt": "family=openai, optimize_for=cost. An API comparison uses 1M cache-read tokens per accepted result and no other charges, with the same acceptance gate. Use the skill's dated Standard rates to compare GPT-6.1 Sol, GPT-6 Sol, and legacy GPT-5.6 Terra. State GPT-6.1 Sol's cache-read rate as a fraction of uncached input, choose a route, and state whether it also proves a latency winner.",
+      "expected_output": "GPT-6.1 Sol costs $0.10 versus $0.20 for each older candidate on this cache-only fixture; no latency ranking follows.",
       "files": [],
       "expectations": [
-        "Returns a French translation retaining the model name.",
-        "Does not invoke model-routing solely because a model name appears.",
-        "Does not add model, effort, price, or access advice."
+        "Computes $0.10 for GPT-6.1 Sol and $0.20 each for GPT-6 Sol and GPT-5.6 Terra.",
+        "Selects GPT-6.1 Sol for this fixture and recognizes its 5% input cache-read rate.",
+        "Does not infer a measured latency winner or universal task-cost dominance from this price-only comparison."
       ]
     },
     {
       "id": 26,
-      "prompt": "Our Luna workers passed 30 tasks and the Sol reviewer flagged none. Shall we lower effort from high to low and remove the reviewer at the same time? The reviewer's ability to catch known errors has never been checked.",
-      "expected_output": "Validate the gate, then trial one cheaper setting at a time while retaining independent review.",
+      "prompt": "family=openai, optimize_for=cost. Base Copilot Pro offers this picker: gpt-6-luna and gpt-5.6-terra, with no Sol or Astra. We need moderate agentic design judgment and an expert checks against the specification. What compatible judgment fallback should we use?",
+      "expected_output": "Use checked Terra, not inaccessible Sol or automatic Luna.",
       "files": [],
       "expectations": [
-        "Explains that a silent gate is not proof it is effective.",
-        "Recommends checking the gate against known-bad outputs.",
-        "Changes at most one routing axis in a monitored trial.",
-        "Does not remove the reviewer simultaneously with lowering effort."
+        "Chooses gpt-5.6-terra and names the independent expert/specification gate.",
+        "Does not cycle through unavailable Sol generations or claim Terra equals Astra.",
+        "Does not require a plan upgrade or automatically substitute Luna."
       ]
     },
     {
       "id": 27,
-      "prompt": "Routing fixture: in representative same-harness Copilot trials with independent acceptance checks, enabled gpt-6-sol and gpt-6-astra both miss the required quality threshold even after context fixes. Enabled claude-opus-5 high meets it at an acceptable measured cost per accepted result. We normally prefer OpenAI. Recommend for this workload only, without changing persistent settings.",
-      "expected_output": "Choose the measured Claude exception instead of turning OpenAI preference into an absolute rule.",
+      "prompt": "family=openai, optimize_for=latency. The picker exposes gpt-5.6-sol-fast and gpt-6.1-sol at medium. A same-prompt pilot passes the same gate on both; fast p95 is 8s versus Sol 20s, with acceptable observed Copilot cost. Recommend a route and fallback for users without fast; can we advertise API 2x pricing or a gpt-6.1-sol-fast alias?",
+      "expected_output": "Recommend measured legacy Sol Fast and compatible current Sol fallback without invented price or aliases.",
       "files": [],
       "expectations": [
-        "Recommends claude-opus-5 at high effort for this workload.",
-        "Cites the supplied representative quality and cost evidence as the justification.",
-        "Does not assert universal Claude superiority.",
-        "Does not change persistent model defaults."
+        "Chooses gpt-5.6-sol-fast medium for the supplied measured win.",
+        "Names gpt-6.1-sol medium as the fallback without promising 8s there.",
+        "Does not transfer an API multiplier to Copilot or configure an invented fast alias."
       ]
     },
     {
       "id": 28,
-      "prompt": "Evaluate two availability fallbacks against this explicit schema fixture. For an owner task requiring max, the only model is gpt-5.5, whose effort support ends at xhigh. For a worker task requiring long_context, the only model is gpt-5.4-mini, whose context support is default only. These requirements cannot silently change. Are either of the named fallback-chain entries sufficient?",
-      "expected_output": "Neither candidate is compatible; chain membership alone cannot satisfy unsupported effort or context requirements.",
+      "prompt": "family=openai, optimize_for=latency. An Astra agent may have submitted a support ticket before its connection failed. Sol is available. Should we repeat the submit on Sol now? What if the ticket already exists?",
+      "expected_output": "Verify action state before redispatch; report an existing ticket without duplicate or unsolicited write.",
       "files": [],
       "expectations": [
-        "Rejects gpt-5.5 as an automatic max-effort fallback under the supplied schema.",
-        "Rejects gpt-5.4-mini as a long_context fallback under the supplied schema.",
-        "Does not silently clamp max to xhigh or long_context to default.",
-        "Reports the need for compatible access or an explicit re-evaluation of the task requirements."
+        "Requires checking whether the ticket already exists before repeating the submit.",
+        "If it exists, reports that result without an unrequested update or comment.",
+        "Keeps approval/idempotency requirements and separates uncertain write completion from access failure."
       ]
     },
     {
       "id": 29,
-      "prompt": "I have base Copilot Pro, not Pro+. My picker offers gpt-6-luna and gpt-5.6-terra, but no Astra or Sol from either generation. I need ordinary agentic coding with moderate design judgment, and an expert checks the result against the specification. What is the no-Astra fallback?",
-      "expected_output": "Terra is the eligible judgment candidate; an unavailable Sol is not a usable fallback.",
+      "prompt": "family=openai, optimize_for=cost. Two owner fallbacks have explicit constraints: max is required but only gpt-5.5 with effort ending at xhigh is available; another task needs unsplittable input and long_context but only gpt-5.4-mini with default context is available. Are chain entries automatically sufficient? No requirement can silently change.",
+      "expected_output": "Report incompatible effort/context fallbacks, not silent clamping.",
       "files": [],
       "expectations": [
-        "Recommends gpt-5.6-terra as an availability fallback for this checked task.",
-        "Names the independent expert/specification check as the quality gate.",
-        "Does not cycle through unavailable GPT-6 Sol or GPT-5.6 Sol.",
-        "Does not claim Terra equals Astra, automatically substitute Luna, or require upgrading the plan."
+        "Rejects automatic gpt-5.5 max and gpt-5.4-mini long_context fallbacks under the supplied contracts.",
+        "Does not silently clamp effort, drop context, or truncate evidence.",
+        "Reports the need for compatible access or an explicit requirement re-evaluation."
       ]
     },
     {
       "id": 30,
-      "prompt": "Recommend for a quality-first, difficult long-horizon coding project. Astra and Sol are both enabled. Use the skill's current vendor and benchmark evidence, which I understand is not a guarantee for my codebase. I can tolerate background latency and will independently review the result.",
-      "expected_output": "Astra high is a supported recommendation for the hardest work, with Sol high as the access fallback.",
+      "prompt": "family=openai, optimize_for=cost. This Copilot Free fixture exposes Auto only, with no manual picker. Can the skill pin Luna or Astra, and does the paid Auto 10% discount apply here?",
+      "expected_output": "Honor Auto-only access; no named-model guarantee or paid-discount transfer.",
       "files": [],
       "expectations": [
-        "Recommends gpt-6-astra at high effort for this quality-first task.",
-        "Gives gpt-6-sol at high effort as the availability fallback.",
-        "Preserves independent verification and does not claim universal task-level superiority.",
-        "Does not require an unavailable private benchmark before making any Astra recommendation."
+        "States no named model can be pinned under this host contract.",
+        "Does not promise Auto runs Luna/Astra or apply the paid discount to Free.",
+        "Does not silently change plans or require an upgrade to provide assistance."
       ]
     },
     {
       "id": 31,
-      "prompt": "Pricing fixture in USD per million default-tier input/output tokens: Sol 2/10, Astra 10/50, Sonnet 5 2/10, Opus 5 5/25. My policy prefers OpenAI. Is Astra a cheaper substitute for Opus, and does Sol save token cost versus Sonnet?",
-      "expected_output": "No on both; provider preference does not reverse the supplied prices.",
+      "prompt": "family=openai, optimize_for=latency. Recommend for the hardest long-horizon architecture synthesis. Quality is explicitly prioritized above expense or turn responsiveness; Astra and GPT-6.1 Sol are enabled, and I independently review the result. There are no local timing measurements. Include a no-Astra access fallback and state uncertainty.",
+      "expected_output": "Provisional Astra high with compatible Sol high fallback and independent review; no claimed measured latency win.",
       "files": [],
       "expectations": [
-        "States Astra's listed input/output rates are twice Opus 5's.",
-        "States Sol and Sonnet 5 have equal listed input/output rates.",
-        "Does not convert token-rate ratios into guaranteed total task-cost ratios.",
-        "Preserves an OpenAI preference without asserting universal OpenAI savings."
-      ]
-    },
-    {
-      "id": 32,
-      "prompt": "I'm configuring a direct OpenAI API worker that needs GPT-6 Sol high reasoning and function calling, with Astra as a possible alternative. Is Chat Completions with reasoning_effort high correct for both? Is none a safe Astra fallback? Use the per-model API compatibility documented in the skill.",
-      "expected_output": "Use Responses; Sol tool calling on Chat Completions requires none, while Astra has neither Chat Completions function calling nor none effort.",
-      "files": [],
-      "expectations": [
-        "Recommends Responses for this reasoning-plus-tools worker.",
-        "States Sol/Luna Chat Completions function calling requires none rather than high.",
-        "States Astra does not support Chat Completions function calling or none effort.",
-        "Does not translate API none support into unsupported Copilot task settings."
-      ]
-    },
-    {
-      "id": 33,
-      "prompt": "API cache-billing fixture: 1 million prefix tokens are written once at $2.50 per million, then read once at $0.20 per million; ordinary input is $2.00 per million. There are no other input or output tokens. Does the write also incur the ordinary $2 input charge?",
-      "expected_output": "No; the applicable rate replaces ordinary input pricing for those tokens, for $2.70 total.",
-      "files": [],
-      "expectations": [
-        "Computes $2.70 total rather than $4.70.",
-        "States the cache-write rate is not additive to uncached input pricing for the same tokens.",
-        "Does not prescribe Copilot task cache-breakpoint arguments based on an API example."
-      ]
-    },
-    {
-      "id": 34,
-      "prompt": "Account fixture: Copilot Free offers me only Auto model selection and no manual picker. I want to follow the skill's GPT-6 recommendations. Can it promise to pin Luna or Astra, and is paid Auto's 10% discount evidence that I can choose its exact model?",
-      "expected_output": "Respect Auto-only access and distinguish routing preferences from enforceable selections and discount eligibility.",
-      "files": [],
-      "expectations": [
-        "States that this account cannot pin a named model through the supplied host contract.",
-        "Does not imply Auto guarantees Luna or Astra.",
-        "Does not apply a paid-plan discount to the Free fixture.",
-        "Does not silently change plans or claim an upgrade is required to receive any assistance."
+        "Recommends Astra high as an allowed quality-first starting route.",
+        "Includes GPT-6.1 Sol high as the no-Astra fallback with the independent review gate.",
+        "States that local completion-time superiority is unmeasured rather than promising a universal win."
       ]
     }
   ]
