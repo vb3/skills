@@ -291,6 +291,72 @@
         "Selects GPT-6.1 Sol for this fixture and recognizes its 5% input cache-read rate.",
         "Does not infer a measured latency winner or universal task-cost dominance from this price-only comparison."
       ]
+    },
+    {
+      "id": 26,
+      "prompt": "family=openai, optimize_for=cost. Base Copilot Pro offers this picker: gpt-6-luna and gpt-5.6-terra, with no Sol or Astra. We need moderate agentic design judgment and an expert checks against the specification. What compatible judgment fallback should we use?",
+      "expected_output": "Use checked Terra, not inaccessible Sol or automatic Luna.",
+      "files": [],
+      "expectations": [
+        "Chooses gpt-5.6-terra and names the independent expert/specification gate.",
+        "Does not cycle through unavailable Sol generations or claim Terra equals Astra.",
+        "Does not require a plan upgrade or automatically substitute Luna."
+      ]
+    },
+    {
+      "id": 27,
+      "prompt": "family=openai, optimize_for=latency. The picker exposes gpt-5.6-sol-fast and gpt-6.1-sol at medium. A same-prompt pilot passes the same gate on both; fast p95 is 8s versus Sol 20s, with acceptable observed Copilot cost. Recommend a route and fallback for users without fast; can we advertise API 2x pricing or a gpt-6.1-sol-fast alias?",
+      "expected_output": "Recommend measured legacy Sol Fast and compatible current Sol fallback without invented price or aliases.",
+      "files": [],
+      "expectations": [
+        "Chooses gpt-5.6-sol-fast medium for the supplied measured win.",
+        "Names gpt-6.1-sol medium as the fallback without promising 8s there.",
+        "Does not transfer an API multiplier to Copilot or configure an invented fast alias."
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "family=openai, optimize_for=latency. An Astra agent may have submitted a support ticket before its connection failed. Sol is available. Should we repeat the submit on Sol now? What if the ticket already exists?",
+      "expected_output": "Verify action state before redispatch; report an existing ticket without duplicate or unsolicited write.",
+      "files": [],
+      "expectations": [
+        "Requires checking whether the ticket already exists before repeating the submit.",
+        "If it exists, reports that result without an unrequested update or comment.",
+        "Keeps approval/idempotency requirements and separates uncertain write completion from access failure."
+      ]
+    },
+    {
+      "id": 29,
+      "prompt": "family=openai, optimize_for=cost. Two owner fallbacks have explicit constraints: max is required but only gpt-5.5 with effort ending at xhigh is available; another task needs unsplittable input and long_context but only gpt-5.4-mini with default context is available. Are chain entries automatically sufficient? No requirement can silently change.",
+      "expected_output": "Report incompatible effort/context fallbacks, not silent clamping.",
+      "files": [],
+      "expectations": [
+        "Rejects automatic gpt-5.5 max and gpt-5.4-mini long_context fallbacks under the supplied contracts.",
+        "Does not silently clamp effort, drop context, or truncate evidence.",
+        "Reports the need for compatible access or an explicit requirement re-evaluation."
+      ]
+    },
+    {
+      "id": 30,
+      "prompt": "family=openai, optimize_for=cost. This Copilot Free fixture exposes Auto only, with no manual picker. Can the skill pin Luna or Astra, and does the paid Auto 10% discount apply here?",
+      "expected_output": "Honor Auto-only access; no named-model guarantee or paid-discount transfer.",
+      "files": [],
+      "expectations": [
+        "States no named model can be pinned under this host contract.",
+        "Does not promise Auto runs Luna/Astra or apply the paid discount to Free.",
+        "Does not silently change plans or require an upgrade to provide assistance."
+      ]
+    },
+    {
+      "id": 31,
+      "prompt": "family=openai, optimize_for=latency. Recommend for the hardest long-horizon architecture synthesis. Quality is explicitly prioritized above expense or turn responsiveness; Astra and GPT-6.1 Sol are enabled, and I independently review the result. There are no local timing measurements. Include a no-Astra access fallback and state uncertainty.",
+      "expected_output": "Provisional Astra high with compatible Sol high fallback and independent review; no claimed measured latency win.",
+      "files": [],
+      "expectations": [
+        "Recommends Astra high as an allowed quality-first starting route.",
+        "Includes GPT-6.1 Sol high as the no-Astra fallback with the independent review gate.",
+        "States that local completion-time superiority is unmeasured rather than promising a universal win."
+      ]
     }
   ]
 }

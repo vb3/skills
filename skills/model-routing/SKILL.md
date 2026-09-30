@@ -1,6 +1,6 @@
 ---
 name: model-routing
-description: Choose an OpenAI or Claude model and reasoning effort for cost or latency. Use before delegating to an AI agent, configuring an agent harness, selecting Luna, Terra, Sol, Astra, Haiku, Sonnet, Opus, or Fable, or diagnosing a run that is too slow, expensive, or unreliable.
+description: Choose OpenAI or Claude models and effort for cost or latency, with access-aware fallbacks and an OpenAI-first Copilot default. Use for model recommendations, subagent assignments, agent harness configuration, or runs that are too slow, expensive, or unreliable. Do not use for ordinary coding or model-name mentions without a routing decision.
 ---
 
 # Model Routing
@@ -15,43 +15,41 @@ For a routing decision, accept two preferences:
 | `optimize_for` | `cost`, `latency` | Minimize cost or time per accepted result |
 
 Accept named values or ordinary language, such as `openai cost` or
-`claude latency`. Infer the task, acceptance criteria, host, and deadline from
-the surrounding request.
+`claude latency`. Infer the task, acceptance criteria, host, and deadline.
 
 Ask for a missing preference only when it changes a user-facing recommendation.
 If both are material and missing, ask family first, then optimization goal on
-the next turn. For autonomous routing, use the family already selected,
-otherwise the current model's family when it is OpenAI or Claude, otherwise
-OpenAI. Default the objective to cost. State applied defaults.
+the next turn. For autonomous routing, preserve an already selected family;
+otherwise prefer OpenAI under Copilot, or the current OpenAI/Claude family on
+other hosts. Default to OpenAI if neither applies, and to cost. State defaults.
 
-An explicit user model choice overrides the local starting policies below.
-State unmet requirements or missing verification without claiming the choice is
-validated. Model selection does not authorize delegation, external writes, or
-additional spending.
+Explicit user model choices override local starting policies. State unmet
+requirements without claiming the choice is validated. Model selection does
+not authorize delegation, external writes, or additional spending.
 
 For ordinary Copilot CLI delegation, leave model, effort, and context overrides
 unset unless the current request or persistent instructions require them.
-`/subagents` owns those defaults; an advisory route is not a configuration change.
+`/subagents` owns those defaults; advisory routing is not configuration.
 
 ## Route
 
-1. **Constrain.** Resolve the two inputs, quality floor, verification gate,
-   deadline, host controls, and billing regime. The step is complete when every
-   constraint is known or explicitly marked unknown.
-2. **Select.** Choose a capability band and effort from the tables below, then
-   apply the selected objective. Treat unmeasured choices as provisional. The
-   step is complete with a compatible route or an explicit blocker.
-3. **Encode.** Before emitting configuration or dispatching, read
-   [harnesses.md](references/harnesses.md) and check the live host schema. Use
-   only supported IDs and controls. The step is complete when the exact host
-   representation is verified.
+1. **Constrain.** Resolve the inputs, quality floor, independent gate, deadline,
+   host controls, access, and billing regime. Finish with each constraint known
+   or explicitly marked unknown.
+2. **Select.** Choose a capability band and effort below, then apply the objective.
+   Treat unmeasured choices as provisional. Finish with a compatible route or
+   an explicit blocker.
+3. **Encode.** Before configuration or dispatch, read
+   [harnesses.md](references/harnesses.md) and check the live schema. Finish with
+   verified IDs and supported controls, or omitted host-managed overrides.
 4. **Report.** State family, objective, model, effort, and one reason. Include
-   the gate, blocker, or material uncertainty. Dispatch only when already
-   authorized.
+   material uncertainty, the gate, and an access fallback when needed. Dispatch
+   only when authorized.
 
-For a running workflow that is unexpectedly expensive, slow, or unreliable,
-read [optimization.md](references/optimization.md) before rerouting. Before
-quoting volatile prices, limits, defaults, caching behavior, or host controls,
+For access-sensitive recommendations, read the fallback and plan guidance in
+[model-map.md](references/model-map.md#access-and-fallbacks). For unexpectedly
+expensive, slow, or unreliable runs, read [optimization.md](references/optimization.md).
+Before quoting prices, limits, defaults, caching, or migration constraints,
 read [model-map.md](references/model-map.md). For benchmark provenance or skill
 maintenance, read [evidence.md](references/evidence.md).
 
@@ -62,34 +60,29 @@ maintenance, read [evidence.md](references/evidence.md).
 | **Efficient** | GPT-6 Luna | Claude Haiku 4.5 | Bounded, independently verifiable work |
 | **Balanced** | GPT-5.6 Terra (legacy candidate) | Claude Sonnet 5.5 | Everyday work when a measured tradeoff favors it |
 | **Frontier** | GPT-6.1 Sol | Claude Opus 5.5 | Ambiguity, consequential judgment, or final review |
-| **Advanced** | GPT-6 Astra | Claude Fable 5.1 | Demanding reasoning or sustained agency when it improves the objective |
+| **Advanced** | GPT-6 Astra | Claude Fable 5.1 | Demanding reasoning or sustained agency |
 
-The pairs are role counterparts, not claims of equal quality, cost, token use,
-or speed. Duration alone does not require Advanced; Sol and Opus also support
-long-running work.
-
-Terra is a measured-workload option, not an automatic rung before Sol: current
-Sol has lower output and cache-read unit prices. Preserve validated legacy
-routes and explicit version choices; repeat effort and quality checks on upgrades.
+These are role counterparts, not equal quality, price, token use, or speed.
+Duration alone does not require Advanced. Terra is not an automatic cheaper
+rung: current Sol has lower output/cache-read unit prices. Preserve validated
+legacy routes and explicit versions; repeat quality/effort checks on upgrades.
 
 Apply these local starting policies:
 
-- Start bounded workers on Efficient only when an independent gate catches the
-  relevant error class.
-- Start owners of consequential plans and final reviewers on Frontier.
-- Keep specialists at the capability their individual work requires; fan-out
-  changes total cost, not the worker's quality floor.
-- Compare Frontier and Advanced for demanding reasoning or agency. When neither
-  is ruled out and no measurements exist, run a bounded Frontier pilot and
-  evaluate Advanced before scaling.
+- Start bounded workers on Efficient only with a gate for the relevant errors.
+- Start consequential planning owners and final reviewers on Frontier; keep
+  each specialist at the capability its work requires.
+- Compare Frontier and Advanced for demanding reasoning or agency. Without
+  measurements, begin a bounded Frontier pilot before scaling. For explicitly
+  quality-first hardest work, Advanced is a valid provisional starting route;
+  include an available, compatible fallback rather than requiring it everywhere.
 
-A gate can be an existing behavioral test, independently derived expected
-value, reconciliation total, reference implementation, or qualified reviewer.
-A gate must catch the failure being risked: compilation does not prove correct
-requirements, and model-written tests can preserve the model's misunderstanding.
-If an explicit model choice has no qualifying gate, state what remains
-unverified. Preserve approval and rollback requirements for production data,
-public contracts, destructive actions, and other high-blast-radius work.
+A gate can be existing behavioral tests, independent expected values,
+reconciliation totals, a reference implementation, or qualified review.
+Compilation does not prove correct requirements; model-written tests can
+preserve a misunderstanding. If an explicit model choice has no qualifying gate,
+state what remains unverified. Preserve approval and rollback requirements for
+production data, public contracts, and destructive actions.
 
 ## Effort
 
@@ -97,42 +90,44 @@ public contracts, destructive actions, and other high-blast-radius work.
 |---|---|
 | Luna, Terra, Sol, Opus 5.5 | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
 | Astra | `high` for demanding reasoning or agency |
-| Sonnet 5.5 | `medium` for well-specified agentic work; `low` or `medium` for latency-sensitive chat; `high` for harder reasoning |
-| Fable 5.1 | `high`; trial `medium` or `low` when the gate shows quality holds |
+| Sonnet 5.5 | `medium` for specified agentic work; `low`/`medium` for chat; `high` for harder reasoning |
+| Fable 5.1 | `high`; trial lower effort when the gate holds |
 | Haiku 4.5 | No effort parameter; omit it |
 
-These are starting policies, not inherited API settings. Set the intended effort
-when authorized and supported; otherwise report the advisory choice as unenforced.
-Defaults and thinking controls vary by version; consult the model map on upgrades.
-Use `xhigh` or `max` when evaluations justify the added cost or time. Prompt
-wording is not a substitute for an unavailable host control.
+These are policies, not inherited API settings. Set effort only when authorized
+and supported; otherwise mark it unenforced. Version defaults and thinking
+controls differ. Use `xhigh`/`max` when evaluations justify the additional cost
+or time. Account for a risk once, rather than stacking overlapping stakes;
+quality/approval requirements remain independent of effort.
 
 ## Objective
 
 | Optimize for | Decision rule |
 |---|---|
-| **Cost** | Choose the lowest measured total bill per accepted result above the quality floor. Include failed attempts, cache operations, tools, and reviewers under the caller's actual billing regime. |
-| **Latency** | Choose the lowest measured end-to-end time per accepted result above the quality floor. Include queueing, model calls, tools, retries, and validation; track tail latency and failures. |
+| **Cost** | Lowest measured total bill per accepted result above the quality floor, including failed attempts, cache operations, tools, workers, and reviewers under the actual billing regime |
+| **Latency** | Lowest measured end-to-end time to an accepted result above the floor, including queues, model calls, tools, retries, and validation; track tails and failures |
 
-Without measurements, use the capability and effort policies as provisional
-priors. Luna for verified work and Sol for judgment is a local OpenAI starting
-policy, not a benchmark ranking across generations. Haiku can lose to Sonnet
-on successful-task cost.
-Astra or Fable can offset higher unit prices through fewer tokens, retries, or
-recovery loops. For latency, throughput and time to first token are diagnostics,
-not substitutes for full-workflow completion time.
+Without measurements, the tables are provisional priors, not cross-generation
+benchmark rankings. Worker-plus-reviewer is not automatically cheaper.
+Astra/Fable can offset unit prices through fewer failures or recovery loops.
+Sol Fast is an allowed host-specific latency candidate when a comparison supports
+it; its name proves neither current-Sol quality nor API-tier pricing.
 
-If the preferred model is unavailable, choose another in-family model only when
-it still satisfies required capability and integration constraints. A
-lower-band fallback needs a qualifying gate. Otherwise report the blocker and
-the minimum change that would make a valid route possible.
+Honor a selected family. When none is selected, Copilot's OpenAI preference
+yields to required capabilities or a representative workload result favoring
+another provider. Compare actual provider charges, not API prices imported into
+Copilot or fixed effort multipliers. Throughput is not full-workflow latency.
+
+If the preferred model is unavailable, follow the map only while preserving
+quality, tools, context, and supported effort. A lower-band fallback needs a
+qualifying gate; otherwise report the blocker and the minimum enabling change.
 
 ## Answer
 
-Give one concise decision:
+> OpenAI + cost: GPT-6.1 Sol at high for the public API redesign. Contract review
+> and compatibility tests are the gate; trial medium only if they hold.
 
-> OpenAI + cost: GPT-6.1 Sol at high effort for the public API redesign. Contract
-> review and compatibility tests are the gate; trial medium only if they hold.
-
-Offer an alternative only when it resolves a real tradeoff, and state its
-precondition. Mark provisional recommendations and unenforced effort controls.
+Give one concise decision. Mark provisional routes and unenforced controls.
+Include a compatible access fallback for sensitive choices such as Astra or
+Sol Fast; an unavailable or unqualified fallback is a blocker, not a solution.
+Offer other alternatives only when they resolve a real tradeoff.

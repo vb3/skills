@@ -21,6 +21,9 @@ or unreliable. The routing procedure and model bands remain authoritative in
 A cheap failed attempt is not a saving. When there are no accepted results,
 report failure rather than a finite successful-task cost.
 
+Before removing a quiet gate, verify that it catches known-bad outputs or
+previously caught real failures. Trial one cheaper setting while retaining it.
+
 ## End-to-end latency
 
 Measure request start through accepted result. Record median and tail completion
@@ -60,3 +63,14 @@ conflict, report the conflict and propose narrower scope or a changed budget.
 
 Context capacity, a host's `context_tier`, and a billing threshold are distinct.
 Select capacity for the input; calculate price from actual usage and host rules.
+
+## Service recovery and external writes
+
+Distinguish access failure from rate limits or transient service errors. Use
+a compatible availability fallback for denied access and provider retry guidance
+for transient failures. Neither is evidence of a capability failure.
+
+Before retrying a possibly completed external write, verify the existing action's
+state. If a ticket, comment, or other write already exists, report the result
+instead of redispatching it or adding an unrequested follow-up. Preserve
+approval and idempotency boundaries when changing the model.
