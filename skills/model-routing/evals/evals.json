@@ -8,8 +8,8 @@
       "files": [],
       "expectations": [
         "States that OpenAI and cost are applied defaults.",
-        "Selects Luna at medium or high effort for the workers and names the behavioral tests as the gate.",
-        "Selects Sol for the final reviewer.",
+        "Selects GPT-6 Luna at medium or high effort for the workers and names the behavioral tests as the gate.",
+        "Selects GPT-6.1 Sol for the final reviewer.",
         "Does not dispatch agents."
       ]
     },
@@ -48,12 +48,13 @@
     },
     {
       "id": 5,
-      "prompt": "Show the four OpenAI and Claude role counterparts, including Astra and Fable. Are the paired models equivalent?",
+      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. Are the paired models equivalent, and is Terra necessarily a cheaper step before the new Sol?",
       "expected_output": "List all four role pairs and deny metric equivalence.",
       "files": [],
       "expectations": [
-        "Pairs Luna with Haiku 4.5, Terra with Sonnet 5, Sol with Opus 5, and Astra with Fable 5.1.",
-        "Calls them role counterparts rather than equal-performance models."
+        "Pairs GPT-6 Luna with Haiku 4.5, legacy GPT-5.6 Terra with Sonnet 5.5, GPT-6.1 Sol with Opus 5.5, and Astra with Fable 5.1.",
+        "Calls them role counterparts rather than equal-performance models.",
+        "Explains that Terra is not an automatic cheaper step because current Sol has lower output and cache-read unit prices."
       ]
     },
     {
@@ -62,7 +63,7 @@
       "expected_output": "Use provisional Sol high with the independent review as the gate.",
       "files": [],
       "expectations": [
-        "Recommends Sol at high effort.",
+        "Recommends GPT-6.1 Sol at high effort.",
         "Names the independent isolation review as the gate.",
         "Labels the choice provisional rather than a measured cost winner.",
         "Does not select Astra solely because it is newer."
@@ -98,7 +99,7 @@
       "expected_output": "Trial Sonnet with explicit effort and the existing quality gate.",
       "files": [],
       "expectations": [
-        "Recommends a Sonnet 5 trial.",
+        "Recommends a Sonnet 5.5 trial.",
         "Treats the chosen effort as an explicit trial rather than an inherited Claude API default.",
         "Requires measuring accepted-result latency and quality.",
         "Does not present Sonnet as already validated."
@@ -142,11 +143,11 @@
     },
     {
       "id": 13,
-      "prompt": "family=openai, optimize_for=cost. I explicitly choose Luna to draft customer runbooks. They remain unpublished, and no independent reviewer or correctness checks exist. Honor the choice and explain the state of the result.",
-      "expected_output": "Honor Luna while clearly marking the drafts unverified.",
+      "prompt": "family=openai, optimize_for=cost. I explicitly choose legacy GPT-5.6 Luna, not GPT-6 Luna, to draft customer runbooks. They remain unpublished, and no independent reviewer or correctness checks exist. Honor the version choice and explain the state of the result.",
+      "expected_output": "Honor legacy GPT-5.6 Luna while clearly marking the drafts unverified.",
       "files": [],
       "expectations": [
-        "Retains the explicit Luna choice.",
+        "Retains the explicit GPT-5.6 Luna choice without silently upgrading to GPT-6 Luna.",
         "States that no qualifying gate exists.",
         "Identifies what remains unverified before publication.",
         "Does not claim the drafts are ready for customer use."
@@ -244,6 +245,51 @@
         "Selects Sol based on one allowance unit versus three.",
         "Uses the supplied host billing rules rather than API token prices.",
         "Does not generalize request-based billing to every host."
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "family=openai, optimize_for=latency. We are upgrading an API agent from gpt-6-sol to gpt-6.1-sol. The old request used Chat Completions with function tools and effort=none. We want to keep those fields unchanged for lower latency. Give compatible migration guidance.",
+      "expected_output": "Use Responses for GPT-6.1 Sol tools and evaluate a supported effort rather than carrying none forward.",
+      "files": [],
+      "expectations": [
+        "Identifies none as unsupported on GPT-6.1 Sol despite support on GPT-6 Sol.",
+        "Uses Responses for tool calling instead of preserving a tool-using Chat Completions request.",
+        "Proposes a supported effort trial with quality checks and does not promise instant output."
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "family=claude, optimize_for=cost. Give explicitly authorized API and Copilot CLI model/effort configurations for Opus 5.5 in an ordinary reasoning workflow with independent review. The CLI fixture supports claude-opus-5.5 and low through max effort. Our previous Opus 5 integration omitted effort, disabled thinking, and forced a named tool. Explain the omitted-effort change and the quality checks needed for migration. Can we copy those settings unchanged?",
+      "expected_output": "Use Opus 5.5 medium with the correct host-specific ID; reject disabled thinking and forced-tool settings.",
+      "files": [],
+      "expectations": [
+        "Uses claude-opus-5-5 for the API and claude-opus-5.5 for the CLI.",
+        "Selects explicit medium effort and identifies it as the Opus 5.5 API default, unlike Opus 5 high.",
+        "States that thinking cannot be disabled and that forced named/any tool choice is unsupported.",
+        "Requires quality revalidation rather than claiming an effort label is equivalent across versions."
+      ]
+    },
+    {
+      "id": 24,
+      "prompt": "family=openai, optimize_for=cost. This ordinary Copilot task delegation has no user or persistent instruction requiring model, reasoning-effort, or context overrides; /subagents owns the defaults. A bounded worker has existing behavioral tests and an independent reviewer. Give an advisory route and the override fields to send, without dispatching.",
+      "expected_output": "Advise GPT-6 Luna but omit all three host-managed override fields.",
+      "files": [],
+      "expectations": [
+        "Advises GPT-6 Luna and names the supplied gate.",
+        "Omits model, reasoning_effort, and context_tier from the dispatch overrides.",
+        "Does not claim to know which model the host default actually runs or dispatch an agent."
+      ]
+    },
+    {
+      "id": 25,
+      "prompt": "family=openai, optimize_for=cost. An API comparison uses 1M cache-read tokens per accepted result and no other charges, with the same acceptance gate. Use the skill's dated Standard rates to compare GPT-6.1 Sol, GPT-6 Sol, and legacy GPT-5.6 Terra. State GPT-6.1 Sol's cache-read rate as a fraction of uncached input, choose a route, and state whether it also proves a latency winner.",
+      "expected_output": "GPT-6.1 Sol costs $0.10 versus $0.20 for each older candidate on this cache-only fixture; no latency ranking follows.",
+      "files": [],
+      "expectations": [
+        "Computes $0.10 for GPT-6.1 Sol and $0.20 each for GPT-6 Sol and GPT-5.6 Terra.",
+        "Selects GPT-6.1 Sol for this fixture and recognizes its 5% input cache-read rate.",
+        "Does not infer a measured latency winner or universal task-cost dominance from this price-only comparison."
       ]
     }
   ]

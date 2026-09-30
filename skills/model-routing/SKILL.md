@@ -29,6 +29,10 @@ State unmet requirements or missing verification without claiming the choice is
 validated. Model selection does not authorize delegation, external writes, or
 additional spending.
 
+For ordinary Copilot CLI delegation, leave model, effort, and context overrides
+unset unless the current request or persistent instructions require them.
+`/subagents` owns those defaults; an advisory route is not a configuration change.
+
 ## Route
 
 1. **Constrain.** Resolve the two inputs, quality floor, verification gate,
@@ -36,7 +40,7 @@ additional spending.
    constraint is known or explicitly marked unknown.
 2. **Select.** Choose a capability band and effort from the tables below, then
    apply the selected objective. Treat unmeasured choices as provisional. The
-   step is complete when one in-family configuration clears the known floor.
+   step is complete with a compatible route or an explicit blocker.
 3. **Encode.** Before emitting configuration or dispatching, read
    [harnesses.md](references/harnesses.md) and check the live host schema. Use
    only supported IDs and controls. The step is complete when the exact host
@@ -55,14 +59,18 @@ maintenance, read [evidence.md](references/evidence.md).
 
 | Band | OpenAI | Claude | Starting use |
 |---|---|---|---|
-| **Efficient** | GPT-5.6 Luna | Claude Haiku 4.5 | Bounded, independently verifiable work |
-| **Balanced** | GPT-5.6 Terra | Claude Sonnet 5 | Everyday work after Efficient misses the floor |
-| **Frontier** | GPT-5.6 Sol | Claude Opus 5 | Ambiguity, consequential judgment, or final review |
+| **Efficient** | GPT-6 Luna | Claude Haiku 4.5 | Bounded, independently verifiable work |
+| **Balanced** | GPT-5.6 Terra (legacy candidate) | Claude Sonnet 5.5 | Everyday work when a measured tradeoff favors it |
+| **Frontier** | GPT-6.1 Sol | Claude Opus 5.5 | Ambiguity, consequential judgment, or final review |
 | **Advanced** | GPT-6 Astra | Claude Fable 5.1 | Demanding reasoning or sustained agency when it improves the objective |
 
 The pairs are role counterparts, not claims of equal quality, cost, token use,
 or speed. Duration alone does not require Advanced; Sol and Opus also support
 long-running work.
+
+Terra is a measured-workload option, not an automatic rung before Sol: current
+Sol has lower output and cache-read unit prices. Preserve validated legacy
+routes and explicit version choices; repeat effort and quality checks on upgrades.
 
 Apply these local starting policies:
 
@@ -87,17 +95,17 @@ public contracts, destructive actions, and other high-blast-radius work.
 
 | Model | Provisional start when supported |
 |---|---|
-| Luna, Terra, Sol | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
+| Luna, Terra, Sol, Opus 5.5 | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
 | Astra | `high` for demanding reasoning or agency |
-| Sonnet 5, Opus 5, Fable 5.1 | `high`; trial `medium` or `low` when the gate shows quality holds |
+| Sonnet 5.5 | `medium` for well-specified agentic work; `low` or `medium` for latency-sensitive chat; `high` for harder reasoning |
+| Fable 5.1 | `high`; trial `medium` or `low` when the gate shows quality holds |
 | Haiku 4.5 | No effort parameter; omit it |
 
-Claude's API defaults to `high` for Sonnet, Opus, and Fable; GPT-5.6 defaults
-to `medium`; Astra's omitted-effort default was not verified. Set effort
-explicitly when the host supports it. Effort labels are not equivalent across
-families. Use `xhigh` or `max` when representative evaluations justify the
-additional cost or time. Prompt wording is not a substitute for an unavailable
-host control.
+These are starting policies, not inherited API settings. Set the intended effort
+when authorized and supported; otherwise report the advisory choice as unenforced.
+Defaults and thinking controls vary by version; consult the model map on upgrades.
+Use `xhigh` or `max` when evaluations justify the added cost or time. Prompt
+wording is not a substitute for an unavailable host control.
 
 ## Objective
 
@@ -107,8 +115,9 @@ host control.
 | **Latency** | Choose the lowest measured end-to-end time per accepted result above the quality floor. Include queueing, model calls, tools, retries, and validation; track tail latency and failures. |
 
 Without measurements, use the capability and effort policies as provisional
-priors. Luna for verified work and Sol for judgment is an OpenAI aggregate cost
-prior, not a ban on Terra. Haiku can lose to Sonnet on successful-task cost.
+priors. Luna for verified work and Sol for judgment is a local OpenAI starting
+policy, not a benchmark ranking across generations. Haiku can lose to Sonnet
+on successful-task cost.
 Astra or Fable can offset higher unit prices through fewer tokens, retries, or
 recovery loops. For latency, throughput and time to first token are diagnostics,
 not substitutes for full-workflow completion time.
@@ -122,7 +131,7 @@ the minimum change that would make a valid route possible.
 
 Give one concise decision:
 
-> OpenAI + cost: Sol at high effort for the public API redesign. Contract
+> OpenAI + cost: GPT-6.1 Sol at high effort for the public API redesign. Contract
 > review and compatibility tests are the gate; trial medium only if they hold.
 
 Offer an alternative only when it resolves a real tradeoff, and state its

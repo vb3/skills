@@ -4,32 +4,40 @@ Read this reference immediately before emitting configuration or dispatching.
 The live host schema is authoritative; this file records verified differences
 that are easy to miss.
 
-## Copilot CLI task tool
+## Copilot CLI delegation
 
-Snapshot checked 2026-09-09:
+Apply the override-authorization rule in [`SKILL.md`](../SKILL.md). The
+registry below is for explicit configuration, not a replacement for host
+preferences.
 
-| `model` | `reasoning_effort` | `context_tier` |
+Relevant IDs checked in this session's task schema on 2026-09-30:
+
+| Candidate | CLI `model` | Direct API `model` |
 |---|---|---|
-| `gpt-5.6-luna`, `gpt-5.6-terra`, `gpt-5.6-sol`, `gpt-6-astra` | `low`, `medium`, `high`, `xhigh`, `max` | `default`, `long_context` |
-| `gpt-5.6-sol-fast` (internal only) | `low`, `medium`, `high`, `xhigh`, `max` | `default`, `long_context` |
-| `claude-sonnet-5`, `claude-opus-5` | `low`, `medium`, `high`, `xhigh`, `max` | `default`, `long_context` |
-| `claude-haiku-4.5` | Omit; not exposed | `default` |
+| Luna | `gpt-6-luna` | `gpt-6-luna` |
+| Sol | `gpt-6.1-sol` | `gpt-6.1-sol` |
+| Astra | `gpt-6-astra` | `gpt-6-astra` |
+| Sonnet | `claude-sonnet-5.5` | `claude-sonnet-5-5` |
+| Opus | `claude-opus-5.5` | `claude-opus-5-5` |
+| Haiku | `claude-haiku-4.5` | `claude-haiku-4-5-20251001` |
 
-Fable 5 and 5.1 appear in public GitHub documentation but were absent from this
-snapshot. Select another in-family model only under the quality-preserving
-fallback rule in [`SKILL.md`](../SKILL.md). `none` was also absent from this
-task schema.
+The current task entries above expose low through max effort, except Haiku,
+which has no effort field. Fable 5/5.1 appear in public documentation but are
+absent from this task snapshot. `none` is not exposed by this task tool,
+even for API models that support it. Context support must be checked per
+model/host; an exposed selector does not establish a numeric window.
 
-Emit only supported fields. A verified bounded-worker route can encode:
+For a user-authorized explicit bounded-worker configuration, for example:
 
 ```json
-{"model": "gpt-5.6-luna", "reasoning_effort": "medium", "context_tier": "default"}
+{"model": "gpt-6-luna", "reasoning_effort": "medium"}
 ```
 
 ## VS Code runSubagent
 
-Use exact labels from the live available-model list rather than API IDs. A
-previously observed Luna label was `GPT-5.6 Luna (copilot)` on 2026-08-19.
+Use exact labels from the live available-model list rather than API or CLI
+IDs. Do not reconstruct labels from branding or transfer old labels to a new
+version.
 
 When the schema exposes only a model selector, omit effort and context fields
 and report the intended effort as unenforced. Prompt wording does not create a
@@ -53,8 +61,9 @@ Source: [Codex configuration](https://developers.openai.com/codex/config-referen
 
 ## Claude API
 
-Use the IDs in [model-map.md](model-map.md) and set
-`output_config: {"effort": "high"}` where supported. Omit effort for Haiku.
+Use the API IDs above and set `output_config: {"effort": "medium"}` for an
+ordinary Opus 5.5 reasoning route. Select effort for the task, not from an
+older model's default; omit effort for Haiku.
 Thinking configuration and effort are separate controls.
 
 Source: [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort).
