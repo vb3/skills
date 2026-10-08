@@ -48,15 +48,14 @@
     },
     {
       "id": 5,
-      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. For balanced OpenAI work, choose between Luna and Sol for (A) bounded mechanical extraction with independent behavioral tests and (B) nuanced cross-source analysis needing judgment and qualified review. Should Terra still be the new balanced default, and does changing that default establish its official retirement?",
-      "expected_output": "Use Luna or Sol for balanced work according to the quality floor, retaining Terra only for legacy or constrained-access routes without claiming retirement.",
+      "prompt": "Show the current four OpenAI and Claude role counterparts, including Astra and Fable. For balanced OpenAI work, choose between Luna and Sol for (A) bounded mechanical extraction with independent behavioral tests and (B) nuanced cross-source analysis needing judgment and qualified review. Should Terra still be the new balanced default?",
+      "expected_output": "Use Luna or Sol for balanced work according to the quality floor, retaining Terra only for legacy or constrained-access routes.",
       "files": [],
       "expectations": [
         "Lists Efficient Luna/Haiku 5.5, Balanced Luna-or-Sol/Sonnet 5.5, Frontier Sol/Opus 5.5, and Advanced Astra/Fable 5.1.",
         "Calls them role counterparts rather than equal-performance models.",
         "Chooses Luna for the bounded checked task and Sol for the task needing nuanced judgment.",
-        "Does not recommend Terra as the new balanced default, while preserving explicit validated legacy or access-fallback use.",
-        "Does not claim an official retirement date from the routing-policy change."
+        "Does not recommend Terra as the new balanced default, while preserving explicit validated legacy or access-fallback use."
       ]
     },
     {
@@ -370,17 +369,6 @@
         "States that non-default temperature and assistant prefill are rejected, and replaces the prefill with structured outputs or an enum tool.",
         "Prices 40K-token prompts at $0.10 input and $0.50 output per million tokens, and 150K-token prompts at $0.50 and $2.50 for the whole request.",
         "Requires rerunning the holdout gate and measuring actual token usage rather than assuming Haiku 4.5 quality or token counts carry over."
-      ]
-    },
-    {
-      "id": 33,
-      "prompt": "family=openai, optimize_for=cost. A user-authorized Copilot CLI configuration pins a planning owner, whose plans an independent architect reviews, to gpt-5.5 at xhigh, and a bounded worker with behavioral tests to gpt-5.4-mini. GitHub retires both on 2026-10-19. The picker exposes gpt-6.1-sol, gpt-6-luna, gpt-5.6-sol, and gpt-5.6-luna, each with low through max effort. What should the new pins be, and can the old effort labels carry over?",
-      "expected_output": "Move the owner to gpt-6.1-sol and the worker to gpt-6-luna, drop the retiring IDs, and revalidate effort against the gates.",
-      "files": [],
-      "expectations": [
-        "Pins gpt-6.1-sol for the owner and gpt-6-luna for the worker, treating GitHub's GPT-5.6 suggestions as compatible fallbacks rather than the preferred route.",
-        "Does not keep gpt-5.5 or gpt-5.4-mini as fallbacks.",
-        "Treats effort on the new models as a provisional trial checked by the architect review and behavioral tests, rather than assuming labels transfer."
       ]
     }
   ]

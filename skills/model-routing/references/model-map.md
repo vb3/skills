@@ -64,9 +64,8 @@ reads fell from $0.50 to $0.20. Cache-read ratios are model-specific: Opus 5.5
 and Sonnet 5.5 use 0.05x input, Fable 5.1 uses 0.025x, and Haiku 5.5/4.5 use 0.1x.
 
 `claude-haiku-5-5` is a fixed ID with no dated snapshot; the CLI uses
-`claude-haiku-5.5`. Haiku 4.5's alias is `claude-haiku-4-5`. It is still
-active, with a tentative API retirement not sooner than 2026-10-15 and no
-deprecation notice yet. Haiku 5.5, Sonnet, Opus, and Fable have 1M context and
+`claude-haiku-5.5`. Haiku 4.5's alias is `claude-haiku-4-5`.
+Haiku 5.5, Sonnet, Opus, and Fable have 1M context and
 128K synchronous maximum output. Some batch beta limits differ. Haiku 4.5 has
 200K context and 64K output. Haiku 5.5 produces about 30% more tokens than
 Haiku 4.5 for the same text; compare actual usage, not equal-token assumptions
@@ -76,8 +75,7 @@ Sources: [Claude overview](https://platform.claude.com/docs/en/models/overview),
 [Haiku 5.5](https://platform.claude.com/docs/en/models/haiku-5-5/overview),
 [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview),
 [Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/overview),
-[Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing),
-[Claude deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations).
+[Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing).
 
 ## Host billing
 
@@ -143,14 +141,7 @@ Use an available stronger candidate when it meets the constraints, or report
 the blocker. An access error is not a reasoning failure; a rate limit needs
 service-specific recovery.
 
-GitHub retires `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5-mini` from
-Copilot on 2026-10-19, suggesting GPT-5.6 Sol or Luna instead. They are no
-longer chain entries; move pinned configurations to a current chain and rerun
-the gate. Claude Opus 4.7 left Copilot on 2026-10-02.
-
 Sources: [Haiku 5.5 announcement](https://github.blog/changelog/2026-10-07-claude-haiku-5-5-in-github-copilot/),
-[October retirements](https://github.blog/changelog/2026-09-18-upcoming-deprecation-of-selected-github-copilot-models-in-mid-october/),
-[October 2 deprecations](https://github.blog/changelog/2026-10-02-selected-models-in-github-copilot-deprecated/),
 [GPT-6.1 announcement](https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot/),
 [GPT-6 announcement](https://github.blog/changelog/2026-09-22-openais-gpt-6-sol-and-gpt-6-luna-now-available/),
 [Astra announcement](https://github.blog/changelog/2026-09-04-gpt-6-astra-is-generally-available-in-github-copilot/),

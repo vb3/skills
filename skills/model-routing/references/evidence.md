@@ -13,8 +13,8 @@ demanding polished deliverables, with same-task Sol/Astra comparisons.
 Those are vendor starting points, not universal optima.
 
 The current guide focuses on Luna, Sol, and Astra rather than a separate Terra
-tier. We have not verified a Terra retirement date: retaining it as a legacy
-or access fallback is a routing policy, not a deprecation claim.
+tier. Retaining Terra as a legacy or access fallback is this skill's routing
+policy.
 
 Sources: [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra.md),
 [selection guide](https://developers.openai.com/api/docs/guides/model-selection),
@@ -51,8 +51,7 @@ confirms GPT-6.1 Sol for Pro+, Max, Business, and Enterprise with gradual rollou
 The [September 22 announcement](https://github.blog/changelog/2026-09-22-openais-gpt-6-sol-and-gpt-6-luna-now-available/)
 includes base Pro for Luna, not Sol. The [October 7 announcement](https://github.blog/changelog/2026-10-07-claude-haiku-5-5-in-github-copilot/)
 adds Haiku 5.5 for Pro and above, enabled unless an administrator disables it.
-GitHub retires GPT-5.5, GPT-5.4, GPT-5.4 mini, and GPT-5 mini on October 19.
-No Copilot retirement is announced for Haiku 4.5. Plan-aware fallback guidance
+Plan-aware fallback guidance
 and exact rates live in [model-map.md](model-map.md#access-and-fallbacks).
 
 GPT-6.1 Sol halves GPT-6 Sol's cache-read rate while input/output remain $2/$10.
