@@ -10,7 +10,7 @@ Apply the override-authorization rule in [`SKILL.md`](../SKILL.md). The
 registry below is for explicit configuration, not a replacement for host
 preferences.
 
-Relevant IDs checked in this session's task schema on 2026-09-30:
+Relevant IDs checked in this session's task schema on 2026-10-08:
 
 | Candidate | CLI `model` | Direct API `model` |
 |---|---|---|
@@ -19,13 +19,15 @@ Relevant IDs checked in this session's task schema on 2026-09-30:
 | Astra | `gpt-6-astra` | `gpt-6-astra` |
 | Sonnet | `claude-sonnet-5.5` | `claude-sonnet-5-5` |
 | Opus | `claude-opus-5.5` | `claude-opus-5-5` |
-| Haiku | `claude-haiku-4.5` | `claude-haiku-4-5-20251001` |
+| Haiku | `claude-haiku-5.5` | `claude-haiku-5-5` |
+| Legacy Haiku | `claude-haiku-4.5` | `claude-haiku-4-5-20251001` |
 
-The current task entries above expose low through max effort, except Haiku,
-which has no effort field. Fable 5/5.1 appear in public documentation but are
-absent from this task snapshot. `none` is not exposed by this task tool,
-even for API models that support it. Context support must be checked per
-model/host; an exposed selector does not establish a numeric window.
+The current task entries above expose low through max effort, except legacy
+Haiku 4.5, which has no effort field or `long_context` tier. Fable 5/5.1 appear
+in public documentation but are absent from this task snapshot. `none` is not
+exposed by this task tool, even for API models that support it. Context support
+must be checked per model/host; an exposed selector does not establish a
+numeric window.
 
 For a user-authorized explicit bounded-worker configuration, for example:
 
@@ -63,7 +65,8 @@ Source: [Codex configuration](https://developers.openai.com/codex/config-referen
 
 Use the API IDs above and set `output_config: {"effort": "medium"}` for an
 ordinary Opus 5.5 reasoning route. Select effort for the task, not from an
-older model's default; omit effort for Haiku.
+older model's default. Haiku 5.5 accepts effort; omit it only for legacy
+Haiku 4.5.
 Thinking configuration and effort are separate controls.
 
 Source: [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort).

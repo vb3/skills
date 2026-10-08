@@ -57,7 +57,7 @@ maintenance, read [evidence.md](references/evidence.md).
 
 | Band | OpenAI | Claude | Starting use |
 |---|---|---|---|
-| **Efficient** | GPT-6 Luna | Claude Haiku 4.5 | Bounded, independently verifiable work |
+| **Efficient** | GPT-6 Luna | Claude Haiku 5.5 | Bounded, independently verifiable work |
 | **Balanced** | GPT-6 Luna or GPT-6.1 Sol | Claude Sonnet 5.5 | Everyday work, selecting the lightest route that clears the floor |
 | **Frontier** | GPT-6.1 Sol | Claude Opus 5.5 | Ambiguity, consequential judgment, or final review |
 | **Advanced** | GPT-6 Astra | Claude Fable 5.1 | Demanding reasoning or sustained agency |
@@ -92,8 +92,9 @@ production data, public contracts, and destructive actions.
 | Luna, Sol, Opus 5.5 | `low` for simple execution; `medium` for ordinary reasoning; `high` for complex or consequential work |
 | Astra | `high` for demanding reasoning or agency |
 | Sonnet 5.5 | `medium` for specified agentic work; `low`/`medium` for chat; `high` for harder reasoning |
+| Haiku 5.5 | `low` for chat, short tool tasks, or simple high-volume work; `medium` for ordinary work, including agentic coding; `high` for longer agent tasks or strict instruction following |
 | Fable 5.1 | `high`; trial lower effort when the gate holds |
-| Haiku 4.5 | No effort parameter; omit it |
+| Legacy Haiku 4.5 | No effort parameter; omit it |
 
 These are policies, not inherited API settings. Set effort only when authorized
 and supported; otherwise mark it unenforced. Version defaults and thinking

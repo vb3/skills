@@ -1,6 +1,6 @@
 # Evidence and maintenance
 
-**Primary sources rechecked 2026-09-30.** Vendor positioning, comparative
+**Primary sources rechecked 2026-10-08.** Vendor positioning, comparative
 measurements, and local routing policy are separate. Reviewer agreement is
 not performance evidence.
 
@@ -25,8 +25,19 @@ reasoning or long-horizon work where Opus falls short. Opus defaults to medium;
 Sonnet 5.5's API default stays high, with medium suggested for specified agentic
 work and low/medium for chat. Compare workload results rather than effort labels.
 
+Anthropic positions Haiku 5.5 for high-volume, cost-sensitive, narrowly scoped
+work: classification, extraction, summaries, compaction, subagents, and
+speed-sensitive support or browser use. It states that Sonnet 5.5 and Opus 5.5
+remain better for complex agentic coding. Its claim that Haiku 5.5 costs
+around 75% less to run than Haiku 4.5 on average is a vendor estimate. GitHub's
+report that Haiku 5.5
+"matched Claude Sonnet 5 on many coding tasks" in early testing names no tasks
+or method; it is not parity with Sonnet 5.5 or with this user's workloads.
+
 Sources: [Claude overview](https://platform.claude.com/docs/en/models/overview),
-[Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort).
+[Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort),
+[Haiku 5.5 announcement](https://www.anthropic.com/claude-haiku-5-5),
+[Copilot Haiku 5.5](https://github.blog/changelog/2026-10-07-claude-haiku-5-5-in-github-copilot/).
 
 **Local policy:** OpenAI-first Copilot recommendations when no family is chosen,
 independent gates, Frontier for consequential decisions, and bounded pilots
@@ -38,12 +49,21 @@ Role bands are not benchmark equivalences.
 The [September 29 Copilot announcement](https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot/)
 confirms GPT-6.1 Sol for Pro+, Max, Business, and Enterprise with gradual rollout.
 The [September 22 announcement](https://github.blog/changelog/2026-09-22-openais-gpt-6-sol-and-gpt-6-luna-now-available/)
-includes base Pro for Luna, not Sol. Plan-aware fallback guidance and exact
-rates live in [model-map.md](model-map.md#access-and-fallbacks).
+includes base Pro for Luna, not Sol. The [October 7 announcement](https://github.blog/changelog/2026-10-07-claude-haiku-5-5-in-github-copilot/)
+adds Haiku 5.5 for Pro and above, enabled unless an administrator disables it.
+GitHub retires GPT-5.5, GPT-5.4, GPT-5.4 mini, and GPT-5 mini on October 19.
+No Copilot retirement is announced for Haiku 4.5. Plan-aware fallback guidance
+and exact rates live in [model-map.md](model-map.md#access-and-fallbacks).
 
 GPT-6.1 Sol halves GPT-6 Sol's cache-read rate while input/output remain $2/$10.
-Opus 5.5 falls to $4/$20 with $0.20 cache reads. These are unit-price changes,
-not task-cost measurements. Paid Auto's discount does not enforce a model.
+Opus 5.5 falls to $4/$20 with $0.20 cache reads. Sonnet 5.5 cache reads fell
+to $0.10 on October 7; Anthropic estimates about 20% lower cost on most agentic
+work. Haiku 5.5's prices jump 5x above 100K prompt tokens. These are unit-price
+changes, not task-cost measurements. Paid Auto's discount does not enforce a model.
+
+No new OpenAI model IDs appeared through October 8. GPT-6.1 Sol gained
+Ultrafast, and GPT-6 Luna gained the Decisions API beta. Do not plan routes
+around unannounced model IDs.
 
 ## Historical benchmark boundaries
 
@@ -89,4 +109,5 @@ live model access, or workload performance.
    Report whether discovery, injected-context guidance, or workload tests ran.
 
 Remaining unknowns: Astra's omitted API default, internal Sol Fast economics,
+Haiku 5.5 against Luna or Sonnet 5.5 on the same host and tasks,
 account-specific access, and success/time metrics for this user's workflows.

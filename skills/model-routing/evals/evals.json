@@ -52,7 +52,7 @@
       "expected_output": "Use Luna or Sol for balanced work according to the quality floor, retaining Terra only for legacy or constrained-access routes without claiming retirement.",
       "files": [],
       "expectations": [
-        "Lists Efficient Luna/Haiku, Balanced Luna-or-Sol/Sonnet 5.5, Frontier Sol/Opus 5.5, and Advanced Astra/Fable 5.1.",
+        "Lists Efficient Luna/Haiku 5.5, Balanced Luna-or-Sol/Sonnet 5.5, Frontier Sol/Opus 5.5, and Advanced Astra/Fable 5.1.",
         "Calls them role counterparts rather than equal-performance models.",
         "Chooses Luna for the bounded checked task and Sol for the task needing nuanced judgment.",
         "Does not recommend Terra as the new balanced default, while preserving explicit validated legacy or access-fallback use.",
@@ -73,13 +73,13 @@
     },
     {
       "id": 7,
-      "prompt": "family=claude, optimize_for=cost. Choose workers for 40 bounded C# fixes. Each has a clear patch specification, an existing reproduction test, regression tests, and an independent Opus reviewer. The host exposes Haiku as claude-haiku-4.5 with no effort control, plus Sonnet and Opus.",
-      "expected_output": "Start Haiku workers without inventing an effort control.",
+      "prompt": "family=claude, optimize_for=cost. Choose workers for 40 bounded C# fixes. Each has a clear patch specification, an existing reproduction test, regression tests, and an independent Opus reviewer. The host exposes claude-haiku-5.5 with low through max effort, plus Sonnet and Opus.",
+      "expected_output": "Start Haiku 5.5 workers at a provisional explicit effort with the tests and reviewer as gates.",
       "files": [],
       "expectations": [
-        "Selects claude-haiku-4.5 for the bounded workers.",
+        "Selects claude-haiku-5.5 for the bounded workers.",
         "Names the tests and independent reviewer as gates.",
-        "Omits reasoning effort for Haiku.",
+        "Sets an explicit provisional effort, medium or a gated low trial, rather than omitting effort or starting at xhigh/max.",
         "Stays within Claude."
       ]
     },
@@ -329,13 +329,13 @@
     },
     {
       "id": 29,
-      "prompt": "family=openai, optimize_for=cost. Two owner fallbacks have explicit constraints: max is required but only gpt-5.5 with effort ending at xhigh is available; another task needs unsplittable input and long_context but only gpt-5.4-mini with default context is available. Are chain entries automatically sufficient? No requirement can silently change.",
-      "expected_output": "Report incompatible effort/context fallbacks, not silent clamping.",
+      "prompt": "family=claude, optimize_for=cost. An extraction worker passes its gate on claude-haiku-5.5 at explicit medium effort with long_context, because each contract is an unsplittable 300K-token input. For some users an administrator disabled Haiku 5.5; their picker shows claude-haiku-4.5 and claude-sonnet-5.5. Is the next Haiku chain entry automatically sufficient? No requirement can silently change.",
+      "expected_output": "Reject the incompatible Haiku 4.5 fallback; offer a gated Sonnet 5.5 trial or report the blocker.",
       "files": [],
       "expectations": [
-        "Rejects automatic gpt-5.5 max and gpt-5.4-mini long_context fallbacks under the supplied contracts.",
-        "Does not silently clamp effort, drop context, or truncate evidence.",
-        "Reports the need for compatible access or an explicit requirement re-evaluation."
+        "Rejects an automatic claude-haiku-4.5 fallback because it lacks the effort control and its 200K context cannot hold the 300K input.",
+        "Does not silently drop effort, truncate or split the input, or weaken the gate.",
+        "Offers claude-sonnet-5.5 with long_context as a provisional stronger fallback that must pass the same gate, or reports the access blocker such as re-enabling Haiku 5.5."
       ]
     },
     {
@@ -358,6 +358,29 @@
         "Recommends Astra high as an allowed quality-first starting route.",
         "Includes GPT-6.1 Sol high as the no-Astra fallback with the independent review gate.",
         "States that local completion-time superiority is unmeasured rather than promising a universal win."
+      ]
+    },
+    {
+      "id": 32,
+      "prompt": "family=claude, optimize_for=cost. We are moving an API ticket classifier from claude-haiku-4-5-20251001 to Haiku 5.5. The old request omitted effort, set temperature=0, and ended messages with an assistant prefill of '{'. A labeled holdout set is the gate. Most prompts are 40K tokens; a few are 150K. Give the API model and effort, the required request changes, and the Standard input/output rates for each prompt size.",
+      "expected_output": "Use claude-haiku-5-5 at explicit low or medium effort, remove temperature and prefill, and quote the tiered rates.",
+      "files": [],
+      "expectations": [
+        "Uses claude-haiku-5-5 with explicit low or medium effort, noting that Haiku 5.5 defaults to medium while Haiku 4.5 had no effort control.",
+        "States that non-default temperature and assistant prefill are rejected, and replaces the prefill with structured outputs or an enum tool.",
+        "Prices 40K-token prompts at $0.10 input and $0.50 output per million tokens, and 150K-token prompts at $0.50 and $2.50 for the whole request.",
+        "Requires rerunning the holdout gate and measuring actual token usage rather than assuming Haiku 4.5 quality or token counts carry over."
+      ]
+    },
+    {
+      "id": 33,
+      "prompt": "family=openai, optimize_for=cost. A user-authorized Copilot CLI configuration pins a planning owner, whose plans an independent architect reviews, to gpt-5.5 at xhigh, and a bounded worker with behavioral tests to gpt-5.4-mini. GitHub retires both on 2026-10-19. The picker exposes gpt-6.1-sol, gpt-6-luna, gpt-5.6-sol, and gpt-5.6-luna, each with low through max effort. What should the new pins be, and can the old effort labels carry over?",
+      "expected_output": "Move the owner to gpt-6.1-sol and the worker to gpt-6-luna, drop the retiring IDs, and revalidate effort against the gates.",
+      "files": [],
+      "expectations": [
+        "Pins gpt-6.1-sol for the owner and gpt-6-luna for the worker, treating GitHub's GPT-5.6 suggestions as compatible fallbacks rather than the preferred route.",
+        "Does not keep gpt-5.5 or gpt-5.4-mini as fallbacks.",
+        "Treats effort on the new models as a provisional trial checked by the architect review and behavioral tests, rather than assuming labels transfer."
       ]
     }
   ]

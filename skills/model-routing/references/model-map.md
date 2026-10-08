@@ -1,6 +1,6 @@
 # Model map
 
-**Primary sources checked 2026-09-30.** Facts below are a dated reference;
+**Primary sources checked 2026-10-08.** Facts below are a dated reference;
 the live host schema and account policy decide availability. Routing policy
 lives in [SKILL.md](../SKILL.md); exact encoding lives in [harnesses.md](harnesses.md).
 
@@ -45,27 +45,39 @@ USD per million tokens; cache-write rates depend on duration:
 
 | Candidate / API ID | Input | 5m write | 1h write | Cache read | Output |
 |---|---:|---:|---:|---:|---:|
-| Haiku: `claude-haiku-4-5-20251001` | 1.00 | 1.25 | 2.00 | 0.10 | 5.00 |
-| Sonnet: `claude-sonnet-5-5` | 2.00 | 2.50 | 4.00 | 0.20 | 10.00 |
+| Haiku: `claude-haiku-5-5`, prompt <=100K | 0.10 | 0.125 | 0.20 | 0.01 | 0.50 |
+| Haiku: `claude-haiku-5-5`, prompt >100K | 0.50 | 0.625 | 1.00 | 0.05 | 2.50 |
+| Sonnet: `claude-sonnet-5-5` | 2.00 | 2.50 | 4.00 | 0.10 | 10.00 |
 | Opus: `claude-opus-5-5` | 4.00 | 5.00 | 8.00 | 0.20 | 20.00 |
 | Fable: `claude-fable-5-1` | 10.00 | 12.50 | 20.00 | 0.25 | 50.00 |
+| Legacy Haiku: `claude-haiku-4-5-20251001` | 1.00 | 1.25 | 2.00 | 0.10 | 5.00 |
 
-Opus 5.5 was released September 22 and Sonnet 5.5 September 28. Opus's
-input/output prices fell 20% from Opus 5, while cache reads fell from $0.50
-to $0.20. Sonnet's base rates are unchanged from Sonnet 5. Cache-read ratios
-are model-specific: Opus 5.5 uses 0.05x input, Fable 5.1 uses 0.025x, and
-Sonnet/Haiku use 0.1x.
+Haiku 5.5 was released October 7. A request whose prompt exceeds 100K tokens
+pays the higher row for every category, including output; other current
+Claude candidates keep one rate across 1M context. Below the threshold, Haiku
+5.5's unit prices are one tenth of Haiku 4.5's; above it, one half.
 
-Haiku's API alias is `claude-haiku-4-5`; its CLI ID uses a dot instead.
-Sonnet, Opus, and Fable have 1M context at standard context prices and 128K
-synchronous maximum output. Some batch beta limits differ. Haiku has 200K
-context and 64K output. Newer Claude tokenizers differ from older generations;
-compare actual usage, not equal-token assumptions across vendors.
+Opus 5.5 was released September 22 and Sonnet 5.5 September 28. On October 7,
+Sonnet 5.5 cache reads fell from $0.20 to $0.10; its other rates are unchanged
+from Sonnet 5. Opus's input/output prices fell 20% from Opus 5, while cache
+reads fell from $0.50 to $0.20. Cache-read ratios are model-specific: Opus 5.5
+and Sonnet 5.5 use 0.05x input, Fable 5.1 uses 0.025x, and Haiku 5.5/4.5 use 0.1x.
+
+`claude-haiku-5-5` is a fixed ID with no dated snapshot; the CLI uses
+`claude-haiku-5.5`. Haiku 4.5's alias is `claude-haiku-4-5`. It is still
+active, with a tentative API retirement not sooner than 2026-10-15 and no
+deprecation notice yet. Haiku 5.5, Sonnet, Opus, and Fable have 1M context and
+128K synchronous maximum output. Some batch beta limits differ. Haiku 4.5 has
+200K context and 64K output. Haiku 5.5 produces about 30% more tokens than
+Haiku 4.5 for the same text; compare actual usage, not equal-token assumptions
+across versions or vendors.
 
 Sources: [Claude overview](https://platform.claude.com/docs/en/models/overview),
+[Haiku 5.5](https://platform.claude.com/docs/en/models/haiku-5-5/overview),
 [Opus 5.5](https://platform.claude.com/docs/en/models/opus-5-5/overview),
 [Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/overview),
-[Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing).
+[Claude pricing](https://platform.claude.com/docs/en/about-claude/pricing),
+[Claude deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations).
 
 ## Host billing
 
@@ -79,7 +91,8 @@ The checked Copilot input, output, cache-read, and listed cache-write rates
 match the corresponding base API rates. API-only cache-duration and service
 options do not automatically transfer. GPT-6 Luna and GPT-6.1 Sol use a 272K
 input threshold with whole-request input/cache/write rates x2 and output x1.5.
-Legacy GPT-5.6 Luna uses 200K on Copilot, versus 272K on its API.
+Claude Haiku 5.5 uses a 100K input threshold on Copilot, with every rate x5
+above it. Legacy GPT-5.6 Luna uses 200K on Copilot, versus 272K on its API.
 A `long_context` flag alone does not establish the price.
 
 For token billing:
@@ -102,8 +115,8 @@ Sources: [Copilot pricing](https://docs.github.com/en/copilot/reference/copilot-
 Published support, schema membership, entitlement, and administrator enablement
 are separate. GPT-6.1 Sol is eligible on Pro+, Max, Business, and Enterprise,
 not base Pro. The GPT-6 Sol/Astra and legacy GPT-5.6 Sol announcements list
-the same paid plans; GPT-6 Luna and legacy Terra/Luna include Pro.
-Free/Student use Auto only. Confirm the actual picker and policy.
+the same paid plans; GPT-6 Luna, Claude Haiku 5.5, and legacy Terra/Luna
+include Pro. Free/Student use Auto only. Confirm the actual picker and policy.
 
 For a base-Pro judgment task without Sol/Astra, consider eligible Terra only
 with an adequate quality gate. If it cannot meet the requirement, report the
@@ -113,23 +126,32 @@ Read each chain left to right, choosing the first available, compatible route:
 
 | Role | Availability chain |
 |---|---|
-| Sol | `gpt-6.1-sol` -> `gpt-6-sol` -> `gpt-5.6-sol` -> `gpt-5.5` |
-| Luna | `gpt-6-luna` -> `gpt-5.6-luna` -> `gpt-5.4-mini` |
+| Sol | `gpt-6.1-sol` -> `gpt-6-sol` -> `gpt-5.6-sol` |
+| Luna | `gpt-6-luna` -> `gpt-5.6-luna` |
 | Astra | `gpt-6-astra` -> the Sol chain |
 | Sol Fast | `gpt-5.6-sol-fast` -> the Sol chain |
 | Opus | `claude-opus-5.5` -> `claude-opus-5` |
 | Sonnet | `claude-sonnet-5.5` -> `claude-sonnet-5` |
+| Haiku | `claude-haiku-5.5` -> `claude-haiku-4.5` |
 
 These are CLI IDs, not API names or quality equivalence. The base-Pro branch
 precedes repeated attempts at unavailable Sol generations. Preserve the gate,
 tools, input capacity, deadline, and supported effort on every fallback.
-`gpt-5.5` lacks task `max`; `gpt-5.4-mini` lacks `max` and `long_context` in
-this schema. Chain membership does not make an incompatible candidate usable.
+`claude-haiku-4.5` lacks task effort and `long_context` in this schema.
+Chain membership does not make an incompatible candidate usable.
 Use an available stronger candidate when it meets the constraints, or report
 the blocker. An access error is not a reasoning failure; a rate limit needs
 service-specific recovery.
 
-Sources: [GPT-6.1 announcement](https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot/),
+GitHub retires `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5-mini` from
+Copilot on 2026-10-19, suggesting GPT-5.6 Sol or Luna instead. They are no
+longer chain entries; move pinned configurations to a current chain and rerun
+the gate. Claude Opus 4.7 left Copilot on 2026-10-02.
+
+Sources: [Haiku 5.5 announcement](https://github.blog/changelog/2026-10-07-claude-haiku-5-5-in-github-copilot/),
+[October retirements](https://github.blog/changelog/2026-09-18-upcoming-deprecation-of-selected-github-copilot-models-in-mid-october/),
+[October 2 deprecations](https://github.blog/changelog/2026-10-02-selected-models-in-github-copilot-deprecated/),
+[GPT-6.1 announcement](https://github.blog/changelog/2026-09-29-gpt-6-1-sol-in-github-copilot/),
 [GPT-6 announcement](https://github.blog/changelog/2026-09-22-openais-gpt-6-sol-and-gpt-6-luna-now-available/),
 [Astra announcement](https://github.blog/changelog/2026-09-04-gpt-6-astra-is-generally-available-in-github-copilot/),
 [GPT-5.6 announcement](https://github.blog/changelog/2026-07-09-openais-gpt-5-6-sol-terra-and-luna-are-now-available-in-github-copilot/),
@@ -142,40 +164,50 @@ Sources: [GPT-6.1 announcement](https://github.blog/changelog/2026-09-29-gpt-6-1
 | GPT-6 Luna, GPT-6 Sol, GPT-5.6 family | `none`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
 | GPT-6.1 Sol | `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
 | Astra | `low`, `medium`, `high`, `xhigh`, `max` | Not verified |
-| Opus 5.5 | `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
+| Opus 5.5, Haiku 5.5 | `low`, `medium`, `high`, `xhigh`, `max` | `medium` |
 | Sonnet 5.5, Fable 5.1 | `low`, `medium`, `high`, `xhigh`, `max` | `high` |
-| Haiku 4.5 | Effort parameter unsupported | Not applicable |
+| Legacy Haiku 4.5 | Effort parameter unsupported | Not applicable |
 
 GPT-6.1 Sol supports neither `none` nor `minimal`, unlike GPT-6 Sol's `none`.
 Opus 5.5 changed from Opus 5's high default to medium, but can think more at
 the same label. Sonnet 5.5 recalibrated its levels: medium for well-specified
-agentic work, low/medium for chat, high for harder reasoning. Repeat effort
-sweeps after upgrades rather than carrying settings over.
+agentic work, low/medium for chat, high for harder reasoning. Haiku 5.5 is the
+first Haiku with effort: medium for most work including agentic coding, low for
+chat, short tool tasks, and simple high-volume requests, and high for longer
+agent tasks or strict instruction following. Anthropic suggests comparing
+Haiku xhigh/max with Sonnet 5.5. Repeat effort sweeps after upgrades rather
+than carrying settings over.
 
 Effort is adaptive, not a fixed token or time multiplier. Leave budget room
-for thinking and visible output. Haiku's manual budget on supporting APIs is
-a different parameter.
+for thinking and visible output. Haiku 4.5's manual thinking budget is a
+different parameter, which Haiku 5.5 rejects.
 
 Sources: [OpenAI selection](https://developers.openai.com/api/docs/guides/model-selection),
 [Claude effort](https://platform.claude.com/docs/en/build-with-claude/effort).
 
 ## Speed and scheduling controls
 
-Vendor labels Luna cost-efficient and fast; Claude labels Haiku fastest,
+Vendor labels Luna cost-efficient and fast; Claude labels Haiku 5.5 fastest,
 Sonnet fast, Opus moderate, Fable slower. These are not a standardized
 eight-model completion-time comparison or SLA.
 
 | Control | Scope | Price or constraint |
 |---|---|---|
 | OpenAI Fast | API `service_tier="fast"` or `"priority"` on supported GPT-6/5.6 | 2x Standard rates; check returned tier |
-| Astra Ultrafast | API `service_tier="ultrafast"` | 6x Standard; low initial limits; global or US processing only |
+| OpenAI Ultrafast | API `service_tier="ultrafast"` on Astra and GPT-6.1 Sol | 6x Standard; separate rate limits; Astra global or US processing only, GPT-6.1 Sol also EU |
 | Claude Fast preview | Opus 5.5, Opus 5, Opus 4.8 on Claude API | Access, `speed="fast"`, and documented beta header required; check premium |
 
 Fast is unavailable for GPT-6.1 Sol and Astra with EU residency. API tiers
-are not Copilot task arguments. The exposed internal `gpt-5.6-sol-fast` is a
-valid legacy latency candidate when workload quality/time supports it, with
-the compatible Sol fallback. Its Copilot price/backend remain unverified;
-do not invent `gpt-6.1-sol-fast` or treat an API multiplier as its bill.
+are not Copilot task arguments. Claude Priority Tier does not support Haiku
+5.5; plan Haiku 4.5 commitments separately. The exposed internal
+`gpt-5.6-sol-fast` is a valid legacy latency candidate when workload
+quality/time supports it, with the compatible Sol fallback. Its Copilot
+price/backend remain unverified; do not invent `gpt-6.1-sol-fast` or treat an
+API multiplier as its bill.
+
+For predicate, choice, or score answers, OpenAI's Decisions API beta
+(`/v1/decisions`, `gpt-6-luna` only) claims about 10x faster responses than
+Responses. Use Responses for custom schemas or tool calls.
 
 Both providers discount supported API batches 50%. Allow for the 24-hour
 window, failed/expired items, result handling, and retries. Independent
@@ -184,6 +216,7 @@ Copilot background work is not an API batch job.
 
 Sources: [OpenAI Fast](https://developers.openai.com/api/docs/guides/fast-mode),
 [Ultrafast](https://developers.openai.com/api/docs/guides/ultrafast-mode),
+[Decisions](https://developers.openai.com/api/docs/guides/decisions),
 [Claude Fast](https://platform.claude.com/docs/en/build-with-claude/fast-mode),
 [OpenAI Batch](https://developers.openai.com/api/docs/guides/batch),
 [Claude batches](https://platform.claude.com/docs/en/build-with-claude/batch-processing).
@@ -222,10 +255,17 @@ manual budgets are invalid. Sonnet 5.5 uses `between_tools` at low/medium/high
 to skip up-front thinking; disabled/manual budgets are invalid. At xhigh/max
 use adaptive thinking.
 
-All three reject forced any/named `tool_choice`; use supported auto/none and
-strict tools or structured outputs for schemas. Their thinking blocks bind
-to model/history. Switching can drop reasoning; editing earlier turns can
-invalidate blocks. Use supported compaction and migration.
+Opus 5.5, Fable 5.1, and Sonnet 5.5 reject forced any/named `tool_choice`; use
+supported auto/none and strict tools or structured outputs for schemas.
+Thinking blocks on these and Haiku 5.5 bind to model/history. Switching can
+drop reasoning; editing earlier turns can invalidate blocks. Use supported
+compaction and migration.
+
+Haiku 5.5 thinks adaptively by default; `thinking: {"type": "disabled"}` is
+valid only at high or below, and manual budgets are invalid. It accepts forced
+`tool_choice`, but the response then skips thinking. Unlike Haiku 4.5, it
+rejects assistant prefill and non-default `temperature`/`top_p`/`top_k`; use
+structured outputs or enum tools for formats. Handle `stop_reason: "refusal"`.
 
 Opus/Sonnet 5.5 progress can arrive as thinking blocks, omitted by default
 display. Configure documented display when needed. On Claude API and Google
@@ -236,4 +276,5 @@ GitHub describes conditional enterprise arrangements, not universal access.
 Sources: [GPT-6 guide](https://developers.openai.com/api/docs/guides/latest-model/gpt-6-astra.md),
 [Opus changes](https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5),
 [Sonnet changes](https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5),
+[Haiku migration](https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide),
 [Fable changes](https://platform.claude.com/docs/en/models/fable-5-1/whats-new-fable-5-1).
